@@ -1,2 +1,2 @@
-{"name":"Lift — Progressive Overload","short_name":"Lift","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#0d0f12","theme_color":"#0d0f12",
+{"name":"Lift — Training & Body","short_name":"Lift","start_url":"./","scope":"./","display":"standalone","orientation":"portrait","background_color":"#05060a","theme_color":"#05060a",
 "icons":[{"src":"icons/icon-192.png","sizes":"192x192","type":"image/png"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png"},{"src":"icons/icon-512.png","sizes":"512x512","type":"image/png","purpose":"maskable"}]}
