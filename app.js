@@ -13,7 +13,7 @@ function defaultProgram(){return[
  {id:'lb',name:'Lower B',exercises:[E('Hip Thrust',4,8,12,'Glutes',1),E('Walking Lunge',3,10,12,'Quads',1),E('Leg Extension',3,12,15,'Quads',0),E('Leg Curl',3,10,15,'Hamstrings',0),E('Calf Raise',4,10,15,'Calves',0),E('Hanging Leg Raise',3,10,15,'Abs',0)]}]}
 let S=load();
 function migrate(s){s.sessions=s.sessions||[];s.active=s.active||null;s.settings=Object.assign({restCompound:120,restIso:90},s.settings||{});
- s.goals=Object.assign({kcal:2800,protein:165,steps:8000,lifts:4,bed:'22:45',gainLo:0.25,gainHi:0.5},s.goals||{});
+ s.goals=Object.assign({sleep:8,kcal:2800,protein:165,steps:8000,lifts:4,bed:'22:45',gainLo:0.25,gainHi:0.5},s.goals||{});
  s.body=s.body||{};s.body.weights=s.body.weights||[];s.body.meas=s.body.meas||[];
  s.food=s.food||{};s.manual=s.manual||{};s.notes=s.notes||{};s.v=3;return s}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.days)return migrate(s)}catch(e){}return migrate({days:defaultProgram(),sessions:[],active:null,settings:{restCompound:120,restIso:90}})}
@@ -44,7 +44,7 @@ function go(v){view=v;editSess=null;closeSheet();render();window.scrollTo(0,0)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 const TABOF={workout:'home',history:'more',program:'more',data:'more'};
 function render(){const tv=TABOF[view]||view;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('act',b.dataset.v===tv));movePill();
- $('#topRight').innerHTML='';$('#sub').textContent='';if(view==='more')view='history';({today,home,workout,progress,history,program,data,body}[view])();
+ $('#topRight').innerHTML='';$('#sub').textContent='';if(view==='more')view='history';({today,home,workout,progress,history,program,data,body,sleep:sleepView}[view])();
  const V=$('#view');V.classList.remove('view-in');if(lastView!==view){void V.offsetWidth;V.classList.add('view-in')}lastView=view}
 let lastView=null;
 function movePill(){const a=document.querySelector('nav button.act'),p=document.querySelector('nav .pillsel');if(!a||!p)return;p.style.left=a.offsetLeft+'px';p.style.width=a.offsetWidth+'px'}
@@ -168,7 +168,7 @@ function data(){$('#title').textContent='Data';const stamp=new Date().toISOStrin
  <div class="row wrap" style="margin-top:10px"><button id="xj">Export JSON</button><button id="xc">Export CSV</button><button id="cp">Copy CSV</button></div></div>
  <div class="card"><b>Import JSON</b><div class="mu sm">Replaces all data on this device.</div><input type="file" id="imp" accept=".json,application/json" style="margin-top:10px;width:100%;padding-top:10px"></div>
  <div class="card"><b>Profile</b><div class="mu sm">Mac · 6'2.5" · 175 lb start · lean gain +0.25–0.5 lb/wk · Upper/Lower 4×/wk · 2,800 kcal · 165 g protein · 8k steps · bed 10:45 PM</div></div>
- <button class="danger" id="wipe" style="width:100%">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v3 · data stays on this phone · export regularly</div>`;
+ <button class="danger" id="wipe" style="width:100%">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v4 · data stays on this phone · export regularly</div>`;
  $('#xj').onclick=()=>dl(`lift-backup-${stamp}.json`,JSON.stringify(S,null,1),'application/json');
  $('#xc').onclick=()=>dl(`lift-${stamp}.csv`,toCSV(),'text/csv');
  $('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(toCSV());alert('CSV copied')}catch(e){alert('Copy failed')}};
@@ -226,14 +226,14 @@ function summarySheet(m){openSheet(`<div class="k">Workout complete</div><h1 sty
  <button class="big" id="sdone" style="margin-top:18px">Done</button>`);$('#sdone').onclick=closeSheet}
 // ----- health.json -----
 let H={updated:null,days:[]};
-async function loadHealth(){try{const r=await fetch('health.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(j&&Array.isArray(j.days)){H={updated:j.updated||null,days:j.days.filter(d=>d&&/^\d{4}-\d\d-\d\d$/.test(d.date))};if(['today','body','home'].includes(view)&&!$('#sheet')&&!document.activeElement.matches('input,textarea,select'))render()}}catch(e){}}
+async function loadHealth(){try{const r=await fetch('health.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const j=await r.json();if(j&&Array.isArray(j.days)){H={updated:j.updated||null,days:j.days.filter(d=>d&&/^\d{4}-\d\d-\d\d$/.test(d.date))};if(['today','body','home','sleep'].includes(view)&&!$('#sheet')&&!document.activeElement.matches('input,textarea,select'))render()}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadHealth()});
 const hDay=d=>H.days.find(x=>x.date===d)||null;
 const hasHealth=()=>H.days.length>0;
 const num=v=>typeof v==='number'&&isFinite(v)?v:null;
 function healthChip(){if(!H.updated||!hasHealth())return'';const t=new Date(H.updated);const s=isNaN(t)?'':(ymd(t)===ymd()?t.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):t.toLocaleDateString([],{month:'short',day:'numeric'}));return`<span class="chip"><i></i>Health · synced ${s}</span>`}
 function stepsFor(d){const m=S.manual[d];if(m&&num(m.steps)!==null)return m.steps;const h=hDay(d);return h?num(h.steps):null}
-function sleepFor(d){const m=S.manual[d];if(m&&num(m.sleep)!==null)return m.sleep;const h=hDay(d);return h?num(h.sleepHours):null}
+function sleepFor(d){return sleepRec(d).hours}
 // ----- weight -----
 function weightSeries(){const m=new Map();for(const d of H.days){const w=num(d.weightLb);if(w)m.set(d.date,{date:d.date,lb:w,bf:num(d.bodyFatPct),src:'health'})}
  for(const w of S.body.weights)if(num(w.lb))m.set(w.date,{date:w.date,lb:w.lb,bf:num(w.bf),src:'manual'});return[...m.values()].sort((a,b)=>a.date<b.date?-1:1)}
@@ -260,6 +260,7 @@ const RC={lift:['#ff2d55','#ff6a3d'],pro:['#30d158','#b4f000'],steps:['#00c7be',
 function lastLiftDays(){const s=sorted();if(!s.length)return null;return Math.round((ymdToT(ymd())-ymdToT(ymd(s[s.length-1].date)))/dayMs)}
 function readiness(){let sc=0;const why=[];const d=ymd();const sl=sleepFor(d);
  if(sl!==null){if(sl>=7.5){sc++;why.push(`slept ${r1(sl)} h`)}else if(sl<6.5){sc--;why.push(`only ${r1(sl)} h sleep`)}else why.push(`${r1(sl)} h sleep`)}
+ const sd=sleepDebt();if(sd.n>=3&&sd.debt>=5){sc--;why.push(`${Math.round(sd.debt)} h sleep debt`)}
  const t=hDay(d);const hv=t&&num(t.hrv);if(hv!==null){const prev=H.days.filter(x=>x.date<d&&x.date>=addDays(d,-7)&&num(x.hrv)!==null).map(x=>x.hrv);if(prev.length>=3){const av=prev.reduce((a,b)=>a+b)/prev.length;const q=hv/av;if(q>=1.05){sc++;why.push('HRV above baseline')}else if(q<0.9){sc--;why.push('HRV below baseline')}else why.push('HRV normal')}}
  const rh=t&&num(t.restingHR);if(rh!==null){const prev=H.days.filter(x=>x.date<d&&x.date>=addDays(d,-7)&&num(x.restingHR)!==null).map(x=>x.restingHR);if(prev.length>=3){const av=prev.reduce((a,b)=>a+b)/prev.length;if(rh>av+5){sc--;why.push('resting HR elevated')}}}
  const ll=lastLiftDays();if(ll===null)why.push('fresh start');else if(ll>=2){sc++;why.push(`${ll} days since last lift`)}else{const s=sorted();const prevDay=s.length>1?Math.round((ymdToT(ymd(s[s.length-1].date))-ymdToT(ymd(s[s.length-2].date)))/dayMs):9;if(ll<=1&&prevDay<=1){sc--;why.push('lifted 2 days running')}else why.push(ll===0?'lifted today':'lifted yesterday')}
@@ -291,7 +292,7 @@ function today(){const g=S.goals;const d=ymd();const dt=new Date();$('#sub').tex
  <h2>Body</h2><div class="card" id="tBody"><div class="row sp"><div><div class="k">Weight</div><div class="stat">${lw?r1(lw.lb)+'<span class="mu sm"> lb</span>':'—'}</div><div class="mu sm">${lw?`7-day avg ${r1(lw.ma)} · ${lw.date===d?'today':fmtD(ymdToT(lw.date))}`:'No weigh-ins yet'}</div></div>
  <div style="text-align:right"><div class="k">Trend</div><div class="stat" style="font-size:20px">${rate===null?'—':(rate>=0?'+':'')+r1(rate)+' lb/wk'}</div><div class="mu sm">goal +${g.gainLo}–${g.gainHi}</div></div></div>
  <button style="width:100%;margin-top:12px" id="tW">${lw&&lw.date===d?'Update weigh-in':'Log weigh-in'}</button></div>
- ${showRec?`<div class="card"><div class="row sp"><div class="k">Last night</div>${h&&h.date&&hasHealth()?'<span class="mu sm">Health</span>':''}</div><div class="grid3" style="margin-top:6px">
+ ${showRec?`<div class="card"><div class="row sp"><div class="k">Last night</div><button class="mini" id="tSleep">Sleep ›</button></div><div class="grid3" style="margin-top:6px">
  <div><div class="mu sm">Sleep</div><div class="stat">${sl===null?'—':r1(sl)+'<span class="mu sm">h</span>'}</div>${h&&num(h.sleepScore)!==null?`<div class="mu sm">score ${h.sleepScore}</div>`:''}</div>
  <div><div class="mu sm">HRV</div><div class="stat">${h&&num(h.hrv)!==null?Math.round(h.hrv)+'<span class="mu sm">ms</span>':'—'}</div></div>
  <div><div class="mu sm">Resting HR</div><div class="stat">${h&&num(h.restingHR)!==null?Math.round(h.restingHR)+'<span class="mu sm">bpm</span>':'—'}</div></div></div>
@@ -300,15 +301,15 @@ function today(){const g=S.goals;const d=ymd();const dt=new Date();$('#sub').tex
  <h2>This week</h2><div class="card" id="recap"><div class="grid3"><div><div class="mu sm">Workouts</div><div class="stat">${rc.n}</div></div><div><div class="mu sm">Volume</div><div class="stat" style="font-size:20px">${fmtN(rc.vol)}</div><div class="mu sm">lb · ${rc.sets} sets</div></div><div><div class="mu sm">Weight</div><div class="stat" style="font-size:20px">${rc.dw===null?'—':(rc.dw>=0?'+':'')+r1(rc.dw)}</div><div class="mu sm">lb (7-day avg)</div></div>
  <div><div class="mu sm">Avg protein</div><div class="stat" style="font-size:20px">${rc.pro===null?'—':Math.round(rc.pro)+'g'}</div></div><div><div class="mu sm">Avg steps</div><div class="stat" style="font-size:20px">${rc.steps===null?'—':fmtN(rc.steps)}</div></div><div><div class="mu sm">Avg sleep</div><div class="stat" style="font-size:20px">${rc.sleep===null?'—':r1(rc.sleep)+'h'}</div></div></div><div class="mu sm" style="margin-top:8px">Last 7 days</div></div>`;
  $('#tStart').onclick=()=>{if(S.active)go('workout');else startWorkout(nd)};
- $('#tW').onclick=()=>go('body');
+ $('#tW').onclick=()=>go('body');if($('#tSleep'))$('#tSleep').onclick=()=>go('sleep');
  $('#view').querySelectorAll('[data-food]').forEach(b=>b.onclick=()=>{if(b.dataset.food==='meal')addFood(75,800,'Meal');else addFood(30,200,'Shake');if(navigator.vibrate)navigator.vibrate(10);today()});
  $('#cAdd').onclick=()=>{const p=+$('#cP').value||0,k=+$('#cK').value||0;if(!p&&!k)return;addFood(p,k,'Custom');today()};
  if($('#fUndo'))$('#fUndo').onclick=()=>{foodDay(d).pop();if(!foodDay(d).length)delete S.food[d];save();today()};
- $('#mSave').onclick=()=>{const st=$('#mSteps').value,sp=$('#mSleep').value;const o={};if(st!=='')o.steps=Math.max(0,+st);if(sp!=='')o.sleep=Math.max(0,+sp);if(Object.keys(o).length)S.manual[d]=o;else delete S.manual[d];save();today()}}
+ $('#mSave').onclick=()=>{const st=$('#mSteps').value,sp=$('#mSleep').value;const o=Object.assign({},S.manual[d]||{});delete o.steps;if(st!=='')o.steps=Math.max(0,+st);if(sp!==''){if(+sp!==o.sleep){o.sleep=Math.max(0,+sp);delete o.bed;delete o.wake}}else{delete o.sleep;delete o.bed;delete o.wake;delete o.score}if(Object.keys(o).length)S.manual[d]=o;else delete S.manual[d];save();today()}}
 function fmtBed(b){const[h,m]=b.split(':').map(Number);return new Date(2000,0,1,h,m).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}
 // ----- BODY -----
 let measSel='arms';const MEAS=[['arms','Arms'],['chest','Chest'],['waist','Waist'],['shoulders','Shoulders']];
-function body(){const g=S.goals;const d=ymd();$('#title').textContent='Body';$('#sub').textContent='Composition';$('#topRight').innerHTML=healthChip();
+function body(){const g=S.goals;const d=ymd();$('#title').textContent='Body';$('#sub').textContent='Composition';$('#topRight').innerHTML=renphoChip()||healthChip();
  const ser=withMA(weightSeries());const lw=ser[ser.length-1];const todayE=S.body.weights.find(w=>w.date===d);const def=todayE?todayE.lb:(lw?lw.lb:175);
  const rate=weeklyRate(weightSeries());const lm=S.body.meas.slice().sort((a,b)=>a.date<b.date?-1:1);const lastM=k=>{for(let i=lm.length-1;i>=0;i--)if(num(lm[i][k]))return lm[i][k];return null};
  const pos=v=>Math.max(0,Math.min(100,(v+0.5)/1.5*100));
@@ -320,7 +321,7 @@ function body(){const g=S.goals;const d=ymd();$('#title').textContent='Body';$('
  <div class="card"><div class="row sp"><div class="k">Weekly rate</div><b class="num" id="rate">${rate===null?'—':(rate>=0?'+':'')+r1(rate)+' lb/wk'}</b></div>
  <div style="position:relative;height:14px;border-radius:7px;background:var(--glass2);margin:14px 0 4px"><div style="position:absolute;top:0;bottom:0;left:${pos(g.gainLo)}%;width:${pos(g.gainHi)-pos(g.gainLo)}%;background:rgba(48,209,88,.45);border-radius:7px"></div>${rate===null?'':`<div style="position:absolute;top:-4px;width:6px;height:22px;border-radius:3px;background:var(--tx);left:calc(${pos(rate)}% - 3px);box-shadow:0 0 8px rgba(0,0,0,.4)"></div>`}</div>
  <div class="row sp mu sm"><span>−0.5</span><span>goal ${g.gainLo}–${g.gainHi}</span><span>+1.0</span></div><div style="margin-top:8px" id="tip">${rateTip(rate)}</div></div>
- <h2>Measurements</h2><div class="card"><div class="f" style="grid-template-columns:repeat(4,1fr)">${MEAS.map(([k,l])=>`<label>${l} in<input data-m="${k}" type="number" inputmode="decimal" step="0.1" placeholder="${lastM(k)??'—'}"></label>`).join('')}</div>
+ ${compHTML()}<h2>Measurements</h2><div class="card"><div class="f" style="grid-template-columns:repeat(4,1fr)">${MEAS.map(([k,l])=>`<label>${l} in<input data-m="${k}" type="number" inputmode="decimal" step="0.1" placeholder="${lastM(k)??'—'}"></label>`).join('')}</div>
  <button id="mAdd" style="width:100%;margin-top:10px">Save measurements</button>
  <div class="seg" style="margin-top:12px">${MEAS.map(([k,l])=>`<button data-ms="${k}" class="${k===measSel?'on':''}">${l}</button>`).join('')}</div><canvas id="mch" width="700" height="300" style="height:150px"></canvas></div>
  <h2>Recent</h2><div class="card">${ser.slice(-10).reverse().map(p=>`<div class="row sp" style="padding:6px 0;border-top:1px solid var(--grid)"><span>${fmtD(ymdToT(p.date))}</span><span class="num"><b>${r1(p.lb)}</b> lb${p.bf!==null?` · ${p.bf}%`:''} <span class="mu sm">${p.src==='health'?'Health':'manual'}</span>${p.src==='manual'?` <button class="mini danger" data-wdel="${p.date}">✕</button>`:''}</span></div>`).join('')||'<div class="mu">No weigh-ins yet. Step on the Renpho and log it above.</div>'}</div>`;
@@ -332,16 +333,81 @@ function body(){const g=S.goals;const d=ymd();$('#title').textContent='Body';$('
   if(b.id==='mAdd'){const e={date:d};let any=false;V.querySelectorAll('[data-m]').forEach(i=>{if(i.value!==''){e[i.dataset.m]=r1(+i.value);any=true}});if(!any)return;const ex=S.body.meas.find(x=>x.date===d);if(ex)Object.assign(ex,e);else S.body.meas.push(e);save();return body()}
   if(b.dataset.ms){measSel=b.dataset.ms;return body()}};
  lineChart($('#wch'),ser.slice(-90).map(p=>({t:ymdToT(p.date),a:p.lb,b:p.ma})),['#64d2ff','#ff375f'],'No weigh-ins yet');
- lineChart($('#mch'),lm.filter(x=>num(x[measSel])).map(x=>({t:ymdToT(x.date),a:x[measSel]})),['#bf5af2'],'No '+measSel+' measurements yet')}
-function lineChart(c,pts,cols,empty){const x=c.getContext('2d');const W=c.width,Hh=c.height,p=46;x.clearRect(0,0,W,Hh);x.font='22px -apple-system,sans-serif';x.fillStyle=cssv('--mu');
- if(!pts.length){x.fillText(empty,p,Hh/2);return}const vs=pts.flatMap(q=>[q.a,q.b].filter(v=>v!=null));let lo=Math.min(...vs),hi=Math.max(...vs);if(hi-lo<2){lo-=1;hi+=1}const pad=(hi-lo)*.1;lo-=pad;hi+=pad;
+ drawLF();lineChart($('#mch'),lm.filter(x=>num(x[measSel])).map(x=>({t:ymdToT(x.date),a:x[measSel]})),['#bf5af2'],'No '+measSel+' measurements yet')}
+function lineChart(c,pts,cols,empty,band){const x=c.getContext('2d');const W=c.width,Hh=c.height,p=46;x.clearRect(0,0,W,Hh);x.font='22px -apple-system,sans-serif';x.fillStyle=cssv('--mu');
+ if(!pts.length){x.fillText(empty,p,Hh/2);return}const vs=pts.flatMap(q=>[q.a,q.b].filter(v=>v!=null)).concat(band?[band.lo,band.hi]:[]);let lo=Math.min(...vs),hi=Math.max(...vs);if(hi-lo<2){lo-=1;hi+=1}const pad=(hi-lo)*.1;lo-=pad;hi+=pad;
  const t0=pts[0].t,t1=pts[pts.length-1].t;const X=t=>t1===t0?W/2:p+(t-t0)/(t1-t0)*(W-p-14),Y=v=>Hh-28-(v-lo)/(hi-lo)*(Hh-46);
  x.strokeStyle=cssv('--grid');x.lineWidth=1;for(let k=0;k<=3;k++){const v=lo+(hi-lo)*k/3;x.beginPath();x.moveTo(p,Y(v));x.lineTo(W-6,Y(v));x.stroke();x.fillText(r1(v),0,Y(v)+7)}
+ if(band){x.fillStyle='rgba(48,209,88,.16)';if(cols[0]==='#ff375f')x.fillStyle='rgba(255,55,95,.14)';x.fillRect(p,Y(band.hi),W-p-6,Y(band.lo)-Y(band.hi));x.fillStyle=cssv('--mu')}
  x.fillText(new Date(t0).toLocaleDateString([],{month:'short',day:'numeric'}),p,Hh-2);if(t1!==t0){const s=new Date(t1).toLocaleDateString([],{month:'short',day:'numeric'});x.fillText(s,W-x.measureText(s).width-6,Hh-2)}
  const a=pts.map(q=>[X(q.t),Y(q.a)]);x.fillStyle=cols[0];a.forEach(([u,v])=>{x.beginPath();x.arc(u,v,cols.length>1?5:7,0,7);x.fill()});
  const ln=(arr,col,w)=>{x.strokeStyle=col;x.lineWidth=w;x.lineJoin='round';x.beginPath();arr.forEach(([u,v],i)=>i?x.lineTo(u,v):x.moveTo(u,v));x.stroke()};
  if(cols.length>1)ln(pts.filter(q=>q.b!=null).map(q=>[X(q.t),Y(q.b)]),cols[1],5);else ln(a,cols[0],4)}
 
-window.LIFT={get S(){return S},get H(){return H},target,nextDay,stalled,e1rm,toCSV,readiness,weightSeries,weeklyRate,loadHealth};
+// ===== v4: sleep + composition =====
+const tod=iso=>{if(!iso)return null;const m=String(iso).match(/T?(\d{1,2}):(\d{2})/);return m?(+m[1])*60+(+m[2]):null}; // minutes after midnight (local wall clock in the ISO string)
+const sinceNoon=min=>min===null?null:(min<720?min+1440:min)-720; // bedtime on a continuous scale
+const fmtMin=min=>{if(min===null)return'—';min=((Math.round(min)%1440)+1440)%1440;return new Date(2000,0,1,Math.floor(min/60),min%60).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})};
+const hm=h=>{if(h===null||h===undefined)return'—';const m=Math.round(h*60);return Math.floor(m/60)+'h '+String(m%60).padStart(2,'0')+'m'};
+function sleepRec(d){const h=hDay(d)||{};const m=S.manual[d]||{};const r={hours:num(m.sleep)??num(h.sleepHours),bed:m.bed||h.bedtime||null,wake:m.wake||h.wakeTime||null,score:num(m.score)??num(h.sleepScore),
+ deep:num(h.sleepDeepMin),rem:num(h.sleepRemMin),light:num(h.sleepLightMin),awake:num(h.sleepAwakeMin),src:num(m.sleep)!==null?'manual':(num(h.sleepHours)!==null?'health':null)};
+ if(r.src==='manual'){r.deep=r.rem=r.light=r.awake=null}return r}
+function sleepNights(n,end=ymd()){return[...Array(n)].map((_,i)=>{const d=addDays(end,i-n+1);return{date:d,...sleepRec(d)}})}
+function sleepDebt(){const ns=sleepNights(7).filter(x=>x.hours!==null);return{debt:ns.reduce((a,x)=>a+Math.max(0,S.goals.sleep-x.hours),0),n:ns.length}}
+function consistency(){const bs=sleepNights(14).map(x=>sinceNoon(tod(x.bed))).filter(x=>x!==null);if(bs.length<3)return null;const mu=bs.reduce((a,b)=>a+b)/bs.length;const sd=Math.sqrt(bs.reduce((a,b)=>a+(b-mu)**2,0)/bs.length);return{sd,score:Math.max(0,Math.min(100,Math.round(100-sd))),avg:mu+720,n:bs.length}}
+function bedLate(bed){const b=sinceNoon(tod(bed)),t=sinceNoon(tod(S.goals.bed));return b===null?null:b-t}
+function lastSleep(){for(let i=0;i<90;i++){const d=addDays(ymd(),-i);const r=sleepRec(d);if(r.hours!==null)return{date:d,...r}}return null}
+function baseline(key,days=30){const v=H.days.filter(x=>x.date>=addDays(ymd(),-days)&&num(x[key])!==null).map(x=>x[key]);if(v.length<5)return null;const mu=v.reduce((a,b)=>a+b)/v.length;const sd=Math.sqrt(v.reduce((a,b)=>a+(b-mu)**2,0)/v.length);return{mu,lo:mu-sd,hi:mu+sd}}
+let sleepRange=7;
+function sleepView(){const g=S.goals;const d=ymd();$('#title').textContent='Sleep';$('#sub').textContent='Recovery';$('#topRight').innerHTML=healthChip();
+ const L=lastSleep();const isToday=L&&L.date===d;const debt=sleepDebt();const con=consistency();const late=L?bedLate(L.bed):null;const m=S.manual[d]||{};
+ const st=L&&[L.deep,L.rem,L.light,L.awake].some(x=>x!==null)?[['Deep',L.deep,'#5e5ce6'],['REM',L.rem,'#64d2ff'],['Light',L.light,'#0a84ff'],['Awake',L.awake,'#ff9f0a']].filter(x=>x[1]!==null&&x[1]>0):null;const stT=st?st.reduce((a,x)=>a+x[1],0):0;
+ const hrvB=baseline('hrv'),rhrB=baseline('restingHR');
+ $('#view').innerHTML=`<div class="card">${L?`<div class="row sp"><div class="k">${isToday?'Last night':'Latest night · '+fmtD(ymdToT(L.date))}</div><span class="mu sm">${L.src==='manual'?'manual':'Health'}</span></div>
+ <div class="rings" style="margin-top:8px">${rings([{v:L.hours,max:g.sleep,c:['#5e5ce6','#bf5af2']}],110,14)}<div class="legend"><div><div class="t" style="color:#bf5af2">Asleep</div><b id="slH">${hm(L.hours)}</b> <span class="mu sm">/ ${g.sleep} h</span></div>
+ ${L.score!==null?`<div><div class="t" style="color:var(--mu)">Score</div><b>${L.score}</b></div>`:''}<div><div class="t" style="color:var(--mu)">Bed → wake</div><b style="font-size:16px">${fmtMin(tod(L.bed))} → ${fmtMin(tod(L.wake))}</b></div></div></div>
+ ${late===null?'':`<div style="margin-top:10px"><span class="ready ${late<=15?'hard':late<=60?'normal':'light'}" id="bedPill">● ${late<=15?'Bedtime on time':'Late by '+hm(late/60).replace('0h ','')}</span> <span class="mu sm">target ${fmtBed(g.bed)}</span></div>`}
+ ${st?`<div class="k" style="margin-top:14px">Stages</div><div class="hyp">${st.map(x=>`<i style="flex:${x[1]};background:${x[2]}"></i>`).join('')}</div><div class="row wrap sm" style="gap:12px">${st.map(x=>`<span><span style="color:${x[2]}">●</span> ${x[0]} ${hm(x[1]/60)} <span class="mu">${Math.round(x[1]/stT*100)}%</span></span>`).join('')}</div>`:'<div class="mu sm" style="margin-top:10px">No stage data for this night.</div>'}`
+ :`<div class="k">Sleep</div><div class="mu" style="margin-top:6px">No sleep data yet. It appears here once your watch syncs through Health, or log a night below.</div>`}</div>
+ <div class="grid2"><div class="card"><div class="k">Sleep debt · 7d</div><div class="stat" id="debt">${debt.n?hm(debt.debt):'—'}</div><div class="mu sm">${debt.n?`vs ${g.sleep} h goal · ${debt.n}/7 nights logged`:'no nights logged'}</div></div>
+ <div class="card"><div class="k">Consistency</div><div class="stat" id="cons">${con?con.score:'—'}</div><div class="mu sm">${con?`bedtime ±${Math.round(con.sd)} min · avg ${fmtMin(con.avg)}`:'needs 3+ bedtimes'}</div></div></div>
+ <div class="card"><div class="row sp"><div class="k">Duration</div><div class="seg" style="margin:0;width:120px"><button data-sr="7" class="${sleepRange===7?'on':''}">7d</button><button data-sr="30" class="${sleepRange===30?'on':''}">30d</button></div></div><canvas id="sch" width="700" height="360" style="height:180px"></canvas></div>
+ ${hrvB||rhrB?`<div class="card"><div class="k">HRV · 30 days</div><canvas id="hrvch" width="700" height="300" style="height:150px"></canvas><div class="mu sm">${hrvB?`baseline ${Math.round(hrvB.mu)} ms (band = ±1 SD)`:'not enough HRV data'}</div>
+ <div class="k" style="margin-top:12px">Resting HR · 30 days</div><canvas id="rhrch" width="700" height="300" style="height:150px"></canvas><div class="mu sm">${rhrB?`baseline ${Math.round(rhrB.mu)} bpm`:'not enough resting-HR data'}</div></div>`:''}
+ <div class="card"><div class="k">Log last night manually</div><div class="mu sm">For nights you didn't wear the watch. Manual entries win over Health for that date.</div>
+ <div class="f" style="grid-template-columns:1fr 1fr 1fr;align-items:end"><label>Bedtime<input id="sBed" type="time" value="${m.bed?String(m.bed).slice(11,16):''}"></label><label>Wake<input id="sWake" type="time" value="${m.wake?String(m.wake).slice(11,16):''}"></label><label>Score<input id="sScore" type="number" inputmode="numeric" value="${num(m.score)??''}" placeholder="opt."></label></div>
+ <div class="row" style="margin-top:8px"><button id="sSave" style="flex:1;background:var(--btn);color:#032010;border:0">Save night</button>${num(m.sleep)!==null?'<button class="danger" id="sClr">Clear</button>':''}</div><div class="mu sm" id="sMsg"></div></div>`;
+ const V=$('#view');V.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.sr){sleepRange=+b.dataset.sr;return sleepView()}
+  if(b.id==='sSave'){const bt=$('#sBed').value,wt=$('#sWake').value;if(!bt||!wt){$('#sMsg').textContent='Enter bedtime and wake time.';return}
+   const bm=tod(bt),wm=tod(wt);let dur=wm-bm;if(dur<=0)dur+=1440;if(dur>16*60){$('#sMsg').textContent='That is over 16 h, check the times.';return}
+   const bedDay=bm>=wm?addDays(d,-1):d;const o=Object.assign({},S.manual[d]||{},{sleep:r1(dur/60),bed:bedDay+'T'+bt+':00',wake:d+'T'+wt+':00'});const sc=$('#sScore').value;if(sc!=='')o.score=Math.max(0,Math.min(100,+sc));else delete o.score;S.manual[d]=o;save();return sleepView()}
+  if(b.id==='sClr'){const o=S.manual[d];delete o.sleep;delete o.bed;delete o.wake;delete o.score;if(!Object.keys(o).length)delete S.manual[d];save();return sleepView()}};
+ barChart($('#sch'),sleepNights(sleepRange).map(x=>({d:x.date,v:x.hours})),g.sleep);
+ if($('#hrvch')){const hs=H.days.filter(x=>x.date>=addDays(d,-30));lineChart($('#hrvch'),hs.filter(x=>num(x.hrv)!==null).map(x=>({t:ymdToT(x.date),a:x.hrv})),['#30d158'],'No HRV data',hrvB);lineChart($('#rhrch'),hs.filter(x=>num(x.restingHR)!==null).map(x=>({t:ymdToT(x.date),a:x.restingHR})),['#ff375f'],'No resting-HR data',rhrB)}}
+function barChart(c,pts,goal){const x=c.getContext('2d');const W=c.width,Hh=c.height,p=40,bot=30;x.clearRect(0,0,W,Hh);x.font='20px -apple-system,sans-serif';x.fillStyle=cssv('--mu');
+ if(!pts.some(q=>q.v!==null)){x.fillText('No sleep data in this range',p,Hh/2);return}const mx=Math.max(10,...pts.map(q=>q.v||0));const Y=v=>Hh-bot-v/mx*(Hh-bot-12);const bw=(W-p-8)/pts.length;
+ x.strokeStyle=cssv('--grid');for(const v of[0,4,8]){x.beginPath();x.moveTo(p,Y(v));x.lineTo(W,Y(v));x.stroke();x.fillText(v+'h',0,Y(v)+7)}
+ pts.forEach((q,i)=>{const X=p+i*bw+bw*.18,w=bw*.64;if(q.v!==null){const gr=x.createLinearGradient(0,Y(q.v),0,Y(0));gr.addColorStop(0,q.v>=goal?'#bf5af2':'#5e5ce6');gr.addColorStop(1,'rgba(94,92,230,.35)');x.fillStyle=gr;const h=Y(0)-Y(q.v),r=Math.min(w/2,8);x.beginPath();x.roundRect?x.roundRect(X,Y(q.v),w,h,[r,r,2,2]):x.rect(X,Y(q.v),w,h);x.fill()}
+  if(pts.length<=7||i%5===0){x.fillStyle=cssv('--mu');const l=pts.length<=7?new Date(ymdToT(q.d)).toLocaleDateString([],{weekday:'short'}):new Date(ymdToT(q.d)).getDate()+'';x.fillText(l,X,Hh-4)}});
+ x.strokeStyle='#ff9f0a';x.setLineDash([8,6]);x.lineWidth=2;x.beginPath();x.moveTo(p,Y(goal));x.lineTo(W,Y(goal));x.stroke();x.setLineDash([])}
+// composition
+function compLatest(){const keys=['weightLb','bodyFatPct','leanMassLb','muscleMassLb','bmi','bodyWaterPct','visceralFat','bmr'];const o={};for(const k of keys)for(let i=H.days.length-1;i>=0;i--){const v=num(H.days[i][k]);if(v!==null){o[k]={v,date:H.days[i].date};break}}return o}
+const hasRenpho=()=>H.days.some(x=>num(x.weightLb)!==null||num(x.bodyFatPct)!==null||num(x.leanMassLb)!==null);
+function renphoChip(){if(!hasRenpho())return'';const t=new Date(H.updated);return`<span class="chip"><i style="background:#30d158"></i>Renpho · synced ${isNaN(t)?'':t.toLocaleDateString([],{month:'short',day:'numeric'})}</span>`}
+function leanFatSeries(){const out=[];const hm_=new Map(H.days.map(x=>[x.date,x]));for(const p of weightSeries()){const h=hm_.get(p.date)||{};const bf=p.bf??num(h.bodyFatPct);const lean=p.src==='health'&&num(h.leanMassLb)!==null?h.leanMassLb:(bf!==null?p.lb*(1-bf/100):null);if(lean===null)continue;out.push({t:ymdToT(p.date),a:r1(lean),b:r1(p.lb-lean)})}return out}
+function compHTML(){const c=compLatest();const F=[['weightLb','Weight','lb'],['bodyFatPct','Body fat','%'],['leanMassLb','Lean mass','lb'],['muscleMassLb','Muscle','lb'],['bmi','BMI',''],['bodyWaterPct','Water','%'],['visceralFat','Visceral fat',''],['bmr','BMR','kcal']].filter(f=>c[f[0]]);
+ const lf=leanFatSeries();
+ return(F.length?`<h2>Composition</h2><div class="grid3" id="comp">${F.map(([k,l,u])=>`<div class="card" style="margin:0;padding:12px"><div class="k">${l}</div><div class="stat" style="font-size:21px">${k==='bmr'?fmtN(c[k].v):r1(c[k].v)}<span class="mu sm"> ${u}</span></div><div class="mu sm">${fmtD(ymdToT(c[k].date)).replace(/^\w+, /,'')}</div></div>`).join('')}</div>`:
+ `<div class="card"><div class="k">Renpho</div><div class="mu sm" style="margin-top:4px">No scale data synced yet. Turn on Renpho → Apple Health (Renpho app › Settings › Apple Health) and body composition will show up here.</div></div>`)+
+ `<div class="card"><div class="row sp"><div class="k">Lean vs fat mass</div><span class="mu sm">${lf.length} pts</span></div><canvas id="lfch" width="700" height="360" style="height:180px"></canvas><div class="row sm" style="gap:14px"><span style="color:#30d158">● lean</span><span style="color:#ff9f0a">● fat</span><span class="mu">own scales · goal: lean ↑, fat flat</span></div></div>`}
+function drawLF(){const c=$('#lfch');if(!c)return;const s=leanFatSeries();if(s.length<1){lineChart(c,[],['#30d158'],'Needs weigh-ins with body fat %');return}
+ // two series on separate scales: draw lean, then fat overlay normalized
+ const x=c.getContext('2d');const W=c.width,Hh=c.height,p=50;x.clearRect(0,0,W,Hh);x.font='20px -apple-system,sans-serif';
+ const t0=s[0].t,t1=s[s.length-1].t;const X=t=>t1===t0?W/2:p+(t-t0)/(t1-t0)*(W-p*2);
+ const sc=(k)=>{const v=s.map(q=>q[k]);let lo=Math.min(...v),hi=Math.max(...v);if(hi-lo<2){lo-=1;hi+=1}return v2=>Hh-30-(v2-lo)/(hi-lo)*(Hh-50)};const YL=sc('a'),YF=sc('b');
+ x.fillStyle=cssv('--mu');x.fillText(r1(Math.max(...s.map(q=>q.a))),0,22);x.fillText(r1(Math.max(...s.map(q=>q.b))),W-44,22);
+ for(const[k,Y,col]of[['a',YL,'#30d158'],['b',YF,'#ff9f0a']]){x.strokeStyle=col;x.fillStyle=col;x.lineWidth=4;x.beginPath();s.forEach((q,i)=>i?x.lineTo(X(q.t),Y(q[k])):x.moveTo(X(q.t),Y(q[k])));x.stroke();s.forEach(q=>{x.beginPath();x.arc(X(q.t),Y(q[k]),4,0,7);x.fill()})}}
+
+window.LIFT={get S(){return S},get H(){return H},target,nextDay,stalled,e1rm,toCSV,readiness,weightSeries,sleepRec,sleepDebt,consistency,leanFatSeries,compLatest,weeklyRate,loadHealth};
 render();loadHealth();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
