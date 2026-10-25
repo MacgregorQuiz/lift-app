@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0d0f12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lift">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<title>Lift</title>
+</head><body>
+<header id="top"><h1 id="title">Lift</h1><div id="topRight"></div></header>
+<main id="view"></main>
+<div id="timer" class="hidden"><span id="timerTxt">2:00</span><button id="tMinus">−15</button><button id="tPlus">+15</button><button id="tStop">✕</button></div>
+<nav id="tabs">
+<button data-v="home">🏠<span>Home</span></button>
+<button data-v="progress">📈<span>Progress</span></button>
+<button data-v="history">🗓<span>History</span></button>
+<button data-v="program">✏️<span>Program</span></button>
+<button data-v="data">💾<span>Data</span></button>
+</nav>
+<script src="app.js"></script>
+</body></html>
