@@ -15,7 +15,8 @@ let S=load();
 function migrate(s){s.sessions=s.sessions||[];s.active=s.active||null;s.settings=Object.assign({restCompound:120,restIso:90},s.settings||{});
  s.goals=Object.assign({sleep:8,kcal:2800,protein:165,steps:8000,lifts:4,bed:'22:45',gainLo:0.25,gainHi:0.5},s.goals||{});
  s.body=s.body||{};s.body.weights=s.body.weights||[];s.body.meas=s.body.meas||[];
- s.food=s.food||{};s.manual=s.manual||{};s.notes=s.notes||{};s.v=3;return s}
+ s.food=s.food||{};s.manual=s.manual||{};s.notes=s.notes||{};
+ s.meals=s.meals||{};s.settings.eatOutCost=s.settings.eatOutCost??25;s.settings.prepCost=s.settings.prepCost??6.5;s.v=5;return s}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.days)return migrate(s)}catch(e){}return migrate({days:defaultProgram(),sessions:[],active:null,settings:{restCompound:120,restIso:90}})}
 function save(){localStorage.setItem(KEY,JSON.stringify(S))}
 const norm=n=>n.trim().toLowerCase();
@@ -42,9 +43,9 @@ function isCompound(e){return!!e.compound}
 let view='today',editSess=null;
 function go(v){view=v;editSess=null;closeSheet();render();window.scrollTo(0,0)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
-const TABOF={workout:'home',history:'more',program:'more',data:'more'};
+const TABOF={streaks:'today',workout:'home',history:'more',program:'more',data:'more'};
 function render(){const tv=TABOF[view]||view;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('act',b.dataset.v===tv));movePill();
- $('#topRight').innerHTML='';$('#sub').textContent='';if(view==='more')view='history';({today,home,workout,progress,history,program,data,body,sleep:sleepView}[view])();
+ $('#topRight').innerHTML='';$('#sub').textContent='';if(view==='more')view='history';({today,home,workout,progress,history,program,data,body,sleep:sleepView,streaks}[view])();
  const V=$('#view');V.classList.remove('view-in');if(lastView!==view){void V.offsetWidth;V.classList.add('view-in')}lastView=view}
 let lastView=null;
 function movePill(){const a=document.querySelector('nav button.act'),p=document.querySelector('nav .pillsel');if(!a||!p)return;p.style.left=a.offsetLeft+'px';p.style.width=a.offsetWidth+'px'}
@@ -165,12 +166,13 @@ function dl(name,text,type){const a=document.createElement('a');a.href=URL.creat
 function toCSV(){const rows=[['date','day','exercise','muscle','set','weight_lb','reps','rir','e1rm']];for(const s of sorted())for(const e of s.entries)e.sets.forEach((x,i)=>rows.push([new Date(s.date).toISOString(),s.dayName,e.name,e.muscle||'',i+1,x.w,x.r,x.rir,r1(e1rm(+x.w,+x.r))]));return rows.map(r=>r.map(v=>/[",\n]/.test(String(v))?'"'+String(v).replace(/"/g,'""')+'"':v).join(',')).join('\n')}
 function data(){$('#title').textContent='Data';const stamp=new Date().toISOString().slice(0,10);
  $('#view').innerHTML=moreSeg('data')+`<div class="card"><b>Backup</b><div class="mu sm">${S.sessions.length} workouts, ${S.body.weights.length} weigh-ins stored on this device.</div>
- <div class="row wrap" style="margin-top:10px"><button id="xj">Export JSON</button><button id="xc">Export CSV</button><button id="cp">Copy CSV</button></div></div>
+ <div class="row wrap" style="margin-top:10px"><button id="xj">Export JSON</button><button id="xc">Export CSV</button><button id="cp">Copy CSV</button><button id="xh">Consistency CSV</button></div></div>
  <div class="card"><b>Import JSON</b><div class="mu sm">Replaces all data on this device.</div><input type="file" id="imp" accept=".json,application/json" style="margin-top:10px;width:100%;padding-top:10px"></div>
  <div class="card"><b>Profile</b><div class="mu sm">Mac · 6'2.5" · 175 lb start · lean gain +0.25–0.5 lb/wk · Upper/Lower 4×/wk · 2,800 kcal · 165 g protein · 8k steps · bed 10:45 PM</div></div>
- <button class="danger" id="wipe" style="width:100%">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v4 · data stays on this phone · export regularly</div>`;
+ <button class="danger" id="wipe" style="width:100%">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v5 · data stays on this phone · export regularly</div>`;
  $('#xj').onclick=()=>dl(`lift-backup-${stamp}.json`,JSON.stringify(S,null,1),'application/json');
  $('#xc').onclick=()=>dl(`lift-${stamp}.csv`,toCSV(),'text/csv');
+ if($('#xh'))$('#xh').onclick=()=>dl(`lift-consistency-${stamp}.csv`,mealsCSV(),'text/csv');
  $('#cp').onclick=async()=>{try{await navigator.clipboard.writeText(toCSV());alert('CSV copied')}catch(e){alert('Copy failed')}};
  $('#imp').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const o=JSON.parse(t);if(!o.days||!o.sessions)throw 0;if(!confirm('Replace all data with this backup?'))return;S=migrate(o);save();alert('Imported '+o.sessions.length+' workouts');go('today')}catch(_){alert('Invalid backup file')}})};
  $('#wipe').onclick=()=>{if(confirm('Erase ALL logged workouts? Program is kept.')){S.sessions=[];S.active=null;save();go('today')}}}
@@ -284,6 +286,7 @@ function today(){const g=S.goals;const d=ymd();const dt=new Date();$('#sub').tex
  <div class="card">${S.active?`<div class="k">In progress</div><div class="hero">${esc(S.active.dayName)}</div><button class="big" id="tStart" style="margin-top:12px">Resume workout</button>`:
   `<div class="row sp"><div class="k">Suggested workout</div>${stk?`<span class="chip">🔥 ${stk}-week streak</span>`:''}</div><div class="hero">${esc(nd?nd.name:'—')}</div><div class="mu sm">${nd?nd.exercises.length+' exercises · '+nd.exercises.slice(0,3).map(e=>esc(e.name)).join(', ')+'…':''}</div>
   <div style="margin-top:10px">${readyPill()}</div><button class="big" id="tStart" style="margin-top:14px">Start ${esc(nd?nd.name:'workout')}</button>`}</div>
+ ${checkinHTML(d)}
  <h2>Nutrition</h2><div class="card"><div class="rings">${rings([{v:ft.p,max:g.protein,c:RC.pro},{v:ft.k,max:g.kcal,c:RC.kcal}],104,13)}
  <div class="legend"><div><div class="t" style="color:#30d158">Protein</div><b id="fP">${Math.round(ft.p)}</b> <span class="mu sm">/ ${g.protein} g</span></div><div><div class="t" style="color:#ff9f0a">Calories</div><b id="fK">${fmtN(ft.k)}</b> <span class="mu sm">/ ${fmtN(g.kcal)}</span></div></div></div>
  <div class="qa"><button data-food="meal">Meal +75 g</button><button data-food="shake">Shake +30 g</button></div>
@@ -300,6 +303,7 @@ function today(){const g=S.goals;const d=ymd();const dt=new Date();$('#sub').tex
  <div class="card"><div class="k">Log today manually</div><div class="f" style="grid-template-columns:1fr 1fr auto;align-items:end"><label>Steps<input id="mSteps" type="number" inputmode="numeric" value="${num(m.steps)??''}" placeholder="${steps??'0'}"></label><label>Sleep h<input id="mSleep" type="number" inputmode="decimal" step="0.1" value="${num(m.sleep)??''}" placeholder="7.5"></label><button id="mSave">Save</button></div><div class="mu sm" style="margin-top:6px">Manual values override Health for today.</div></div>
  <h2>This week</h2><div class="card" id="recap"><div class="grid3"><div><div class="mu sm">Workouts</div><div class="stat">${rc.n}</div></div><div><div class="mu sm">Volume</div><div class="stat" style="font-size:20px">${fmtN(rc.vol)}</div><div class="mu sm">lb · ${rc.sets} sets</div></div><div><div class="mu sm">Weight</div><div class="stat" style="font-size:20px">${rc.dw===null?'—':(rc.dw>=0?'+':'')+r1(rc.dw)}</div><div class="mu sm">lb (7-day avg)</div></div>
  <div><div class="mu sm">Avg protein</div><div class="stat" style="font-size:20px">${rc.pro===null?'—':Math.round(rc.pro)+'g'}</div></div><div><div class="mu sm">Avg steps</div><div class="stat" style="font-size:20px">${rc.steps===null?'—':fmtN(rc.steps)}</div></div><div><div class="mu sm">Avg sleep</div><div class="stat" style="font-size:20px">${rc.sleep===null?'—':r1(rc.sleep)+'h'}</div></div></div><div class="mu sm" style="margin-top:8px">Last 7 days</div></div>`;
+ bindCheckin(d,today);
  $('#tStart').onclick=()=>{if(S.active)go('workout');else startWorkout(nd)};
  $('#tW').onclick=()=>go('body');if($('#tSleep'))$('#tSleep').onclick=()=>go('sleep');
  $('#view').querySelectorAll('[data-food]').forEach(b=>b.onclick=()=>{if(b.dataset.food==='meal')addFood(75,800,'Meal');else addFood(30,200,'Shake');if(navigator.vibrate)navigator.vibrate(10);today()});
@@ -408,6 +412,53 @@ function drawLF(){const c=$('#lfch');if(!c)return;const s=leanFatSeries();if(s.l
  x.fillStyle=cssv('--mu');x.fillText(r1(Math.max(...s.map(q=>q.a))),0,22);x.fillText(r1(Math.max(...s.map(q=>q.b))),W-44,22);
  for(const[k,Y,col]of[['a',YL,'#30d158'],['b',YF,'#ff9f0a']]){x.strokeStyle=col;x.fillStyle=col;x.lineWidth=4;x.beginPath();s.forEach((q,i)=>i?x.lineTo(X(q.t),Y(q[k])):x.moveTo(X(q.t),Y(q[k])));x.stroke();s.forEach(q=>{x.beginPath();x.arc(X(q.t),Y(q[k]),4,0,7);x.fill()})}}
 
-window.LIFT={get S(){return S},get H(){return H},target,nextDay,stalled,e1rm,toCSV,readiness,weightSeries,sleepRec,sleepDebt,consistency,leanFatSeries,compLatest,weeklyRate,loadHealth};
+// ===== v5: Consistency + meal prep savings =====
+const HAB=[['meal','Meal prep','#30d158'],['lift','Workout','#ff375f'],['bed','Bed by goal','#5e5ce6'],['pro','Protein goal','#00c7be']];
+function mealDay(d){return S.meals[d]||{prep:0,out:[]}}
+function setMeal(d,o){if(!o.prep&&!(o.out||[]).length)delete S.meals[d];else S.meals[d]=o;save()}
+function habitDay(d){const m=S.meals[d];const lo=ymdToT(d),hi=ymdToT(addDays(d,1));const r={};
+ r.meal=m?(m.prep||0)/2:null; // 0, .5, 1 ; null = not logged
+ r.lift=S.sessions.some(s=>s.date>=lo&&s.date<hi)?1:0;
+ const bed=sleepRec(d).bed;const late=bed?bedLate(bed):null;r.bed=late===null?null:(late<=0?1:0);
+ const fd=S.food[d];r.pro=fd&&fd.length?(foodTot(d).p>=S.goals.protein?1:0):null;return r}
+function habitStats(k,weeks=12){const t=ymd();const days=[];const start=addDays(ymd(weekStart()),-(weeks-1)*7);for(let d=start;d<=t;d=addDays(d,1))days.push({d,v:habitDay(d)[k]});
+ const hit=x=>x.v!==null&&x.v>=(k==='meal'?.5:1);
+ // lifts: rest days don't break streak if weekly goal pace; use "days with workout" counts & weekly streak
+ let cur=0;for(let i=days.length-1;i>=0;i--){if(hit(days[i]))cur++;else if(i===days.length-1&&days[i].v===null)continue;else break}
+ let best=0,run=0;for(const x of days){if(hit(x)){run++;best=Math.max(best,run)}else run=0}
+ const pct=lo=>{const s=days.filter(x=>x.d>=lo);const n=k==='lift'?s.length:s.filter(x=>x.v!==null).length;const h=s.filter(hit).length;return{h,n,p:n?Math.round(h/n*100):null}};
+ return{days,cur,best,week:pct(ymd(weekStart())),month:pct(t.slice(0,8)+'01'),start}}
+function liftWeekStreak(){return streak()}
+function savings(){const st=S.settings,per=Math.max(0,st.eatOutCost-st.prepCost);const t=ymd(),ws=ymd(weekStart()),ms=t.slice(0,8)+'01';const z=()=>({prep:0,saved:0,out:0,outN:0});const o={week:z(),month:z(),all:z(),per};
+ for(const[d,m]of Object.entries(S.meals)){const pr=m.prep||0,out=(m.out||[]).reduce((a,x)=>a+(+x.amt||0),0),on=(m.out||[]).length;for(const[key,ok]of[['all',1],['month',d>=ms],['week',d>=ws]])if(ok){o[key].prep+=pr;o[key].saved+=pr*per;o[key].out+=out;o[key].outN+=on}}return o}
+const $$=n=>'$'+(Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2});
+function checkinHTML(d){const m=mealDay(d);const sv=savings();const outT=(m.out||[]).reduce((a,x)=>a+(+x.amt||0),0);
+ return`<h2>Daily check-in</h2><div class="card ci"><div class="row sp"><div class="k">Meal prep today</div><button class="mini" id="goStreaks">Consistency ›</button></div>
+ <div class="ciRow"><button class="ciB ${m.prep>=1?'on':''}" data-prep="1"><span class="ciDot">${m.prep>=1?'✓':'1'}</span>Ate prepped meal</button><button class="ciB ${m.prep>=2?'on':''}" data-prep="2"><span class="ciDot">${m.prep>=2?'✓':'2'}</span>Ate prepped meal</button></div>
+ <div class="f" style="grid-template-columns:1fr auto;align-items:end;margin-top:10px"><label>Ate out / ordered in · $ optional<input id="outAmt" type="number" inputmode="decimal" step="0.01" placeholder="${st$()}"></label><button id="outAdd" class="ciOut">🍔 Ate out</button></div>
+ <div class="row sp" style="margin-top:8px"><span class="mu sm">${(m.out||[]).length?`${m.out.length} eat-out logged today${outT?' · '+$$(outT):''}`:'No eat-out today 👏'}</span>${(m.out||[]).length?'<button class="mini" id="outUndo">Undo</button>':''}</div>
+ <div class="saveMini" id="goStreaks2"><div><div class="k" style="color:#30d158">Saved this week</div><div class="stat">${$$(sv.week.saved)}</div></div><div style="text-align:right"><div class="mu sm">${sv.week.prep} prepped meals</div><div class="mu sm">all-time ${$$(sv.all.saved)}</div></div></div></div>`}
+function st$(){return'e.g. '+S.settings.eatOutCost}
+function bindCheckin(d,re){const V=$('#view');V.querySelectorAll('[data-prep]').forEach(b=>b.onclick=()=>{const m=Object.assign({out:[]},mealDay(d));const n=+b.dataset.prep;m.prep=(m.prep||0)>=n?n-1:n;setMeal(d,m);if(navigator.vibrate)navigator.vibrate(10);re()});
+ $('#outAdd').onclick=()=>{const m=Object.assign({prep:0},mealDay(d));const a=$('#outAmt').value;m.out=[...(m.out||[]),{t:Date.now(),amt:a===''?null:Math.max(0,+a)}];setMeal(d,m);re()};
+ if($('#outUndo'))$('#outUndo').onclick=()=>{const m=Object.assign({},mealDay(d));m.out=(m.out||[]).slice(0,-1);setMeal(d,m);re()};
+ for(const id of['#goStreaks','#goStreaks2'])if($(id))$(id).onclick=()=>go('streaks')}
+function dotGrid(k,col,st){const cols=[];for(let i=0;i<st.days.length;i+=7)cols.push(st.days.slice(i,i+7));const t=ymd();
+ return`<div class="dots">${cols.map(c=>`<div class="dcol">${c.map(x=>{const v=x.v;const op=v===null?0:v;const cls=v===null?'nil':v>=1?'full':v>0?'half':'miss';return`<i class="${cls}${x.d===t?' now':''}" title="${x.d}" style="${v>0?`background:${col};opacity:${.45+.55*op}`:''}"></i>`}).join('')}</div>`).join('')}</div>`}
+function streaks(){$('#title').textContent='Consistency';$('#sub').textContent='Last 12 weeks';$('#topRight').innerHTML='<button class="mini" id="back">‹ Today</button>';
+ const sv=savings(),st=S.settings;const goal=Math.max(1,14*sv.per);const pc=Math.min(1,sv.week.saved/goal);
+ let h=`<div class="card saveCard"><div class="k" style="color:#30d158">Money saved vs eating out</div><div class="saveTop">${rings([{v:sv.week.saved,max:goal,c:['#30d158','#a8ff78']}],120,15)}<div><div class="bigNum">${$$(sv.week.saved)}</div><div class="mu sm">this week · ${sv.week.prep}/14 prepped meals</div><div class="mu sm">${Math.round(pc*100)}% of max weekly savings</div></div></div>
+ <div class="grid3" style="margin-top:12px"><div><div class="mu sm">This month</div><div class="stat" style="font-size:22px">${$$(sv.month.saved)}</div><div class="mu sm">${sv.month.prep} meals</div></div><div><div class="mu sm">All-time</div><div class="stat" style="font-size:22px;color:#30d158">${$$(sv.all.saved)}</div><div class="mu sm">${sv.all.prep} meals</div></div><div><div class="mu sm">Eat-out spend</div><div class="stat" style="font-size:22px;color:#ff9f0a">${$$(sv.month.out)}</div><div class="mu sm">month · ${sv.month.outN}× (all ${$$(sv.all.out)})</div></div></div>
+ <div class="mu sm" style="margin-top:8px">${$$(sv.per)} saved per prepped meal (${$$(st.eatOutCost)} eat-out − ${$$(st.prepCost)} prep)</div></div>`;
+ for(const[k,l,col]of HAB){const s=habitStats(k);h+=`<div class="card"><div class="row sp"><div class="k" style="color:${col}">${l}</div><span class="chip">🔥 ${s.cur} day${s.cur===1?'':'s'}</span></div>${dotGrid(k,col,s)}
+ <div class="grid3" style="margin-top:8px"><div><div class="mu sm">Best streak</div><div class="stat" style="font-size:20px">${s.best}d</div></div><div><div class="mu sm">This week</div><div class="stat" style="font-size:20px">${s.week.p===null?'—':s.week.p+'%'}</div><div class="mu sm">${s.week.h}/${s.week.n} days</div></div><div><div class="mu sm">This month</div><div class="stat" style="font-size:20px">${s.month.p===null?'—':s.month.p+'%'}</div><div class="mu sm">${s.month.h}/${s.month.n} days</div></div></div>
+ <div class="mu sm" style="margin-top:4px">${{meal:'Full dot = both prepped meals, faded = one. Tap check-in on Today.',lift:'Auto from logged workouts. Weekly streak: '+liftWeekStreak()+' wk.',bed:'Auto from Health bedtime (or manual sleep log) vs '+fmtBed(S.goals.bed)+'. Grey = no data.',pro:'From Today nutrition quick-add vs '+S.goals.protein+' g. Grey = nothing logged.'}[k]}</div></div>`}
+ h+=`<h2>Savings settings</h2><div class="card"><div class="f" style="grid-template-columns:1fr 1fr auto;align-items:end"><label>Eat-out meal $<input id="sEO" type="number" inputmode="decimal" step="0.01" value="${st.eatOutCost}"></label><label>Prepped meal $<input id="sPC" type="number" inputmode="decimal" step="0.01" value="${st.prepCost}"></label><button id="sSave">Save</button></div><div class="mu sm" style="margin-top:6px">Avg Uber Eats / restaurant meal vs cost per prepped meal (from your meal-prep plan, $6.50 default).</div></div>`;
+ $('#view').innerHTML=h;$('#back').onclick=()=>go('today');
+ $('#sSave').onclick=()=>{const a=+$('#sEO').value,b=+$('#sPC').value;if(a>=0&&$('#sEO').value!=='')st.eatOutCost=a;if(b>=0&&$('#sPC').value!=='')st.prepCost=b;save();streaks()}}
+function mealsCSV(){const t=ymd();const ds=new Set(Object.keys(S.meals));const st=habitStats('meal',12);st.days.forEach(x=>ds.add(x.d));const per=Math.max(0,S.settings.eatOutCost-S.settings.prepCost);
+ const rows=[['date','prepped_meals','eat_out_count','eat_out_spend','saved','workout','bed_on_time','protein_hit']];for(const d of[...ds].filter(d=>d<=t).sort()){const m=mealDay(d),h=habitDay(d);if(!S.meals[d]&&!h.lift&&h.bed===null&&h.pro===null)continue;rows.push([d,m.prep||0,(m.out||[]).length,(m.out||[]).reduce((a,x)=>a+(+x.amt||0),0),r1((m.prep||0)*per),h.lift,h.bed??'',h.pro??''])}return rows.map(r=>r.join(',')).join('\n')}
+
+window.LIFT={habitDay,habitStats,savings,mealsCSV,get S(){return S},get H(){return H},target,nextDay,stalled,e1rm,toCSV,readiness,weightSeries,sleepRec,sleepDebt,consistency,leanFatSeries,compLatest,weeklyRate,loadHealth};
 render();loadHealth();
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
