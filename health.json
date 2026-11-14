@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-13T07:51:04-05:00",
+  "updated": "2026-11-14T07:48:28-05:00",
   "days": [
     {
       "date": "2026-09-26",
@@ -739,12 +739,12 @@
     },
     {
       "date": "2026-11-12",
-      "steps": 476,
+      "steps": 2520,
       "sleepHours": 7.08,
       "sleepScore": 90,
       "hrv": 67.29,
-      "restingHR": 42,
-      "activeKcal": 13,
+      "restingHR": 45,
+      "activeKcal": 76,
       "weightLb": null,
       "bodyFatPct": null,
       "bedtime": "2026-11-11T23:36:00-05:00",
@@ -759,6 +759,12 @@
       "bodyWaterPct": null,
       "visceralFat": null,
       "bmr": null
+    },
+    {
+      "date": "2026-11-13",
+      "steps": 3853,
+      "restingHR": 45,
+      "activeKcal": 121
     }
   ]
 }
