@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-15T07:29:55-05:00",
+  "updated": "2026-11-16T07:32:03-05:00",
   "days": [
     {
       "date": "2026-09-26",
@@ -798,6 +798,29 @@
       "sleepDeepMin": 62,
       "sleepRemMin": 128,
       "sleepLightMin": 275,
+      "sleepAwakeMin": null,
+      "leanMassLb": null,
+      "muscleMassLb": null,
+      "bmi": null,
+      "bodyWaterPct": null,
+      "visceralFat": null,
+      "bmr": null
+    },
+    {
+      "date": "2026-11-15",
+      "steps": 2703,
+      "sleepHours": 8.61,
+      "sleepScore": 98,
+      "hrv": 70.76,
+      "restingHR": 47,
+      "activeKcal": 78,
+      "weightLb": null,
+      "bodyFatPct": null,
+      "bedtime": "2026-11-14T22:13:00-05:00",
+      "wakeTime": "2026-11-15T08:17:00-05:00",
+      "sleepDeepMin": 75,
+      "sleepRemMin": 157,
+      "sleepLightMin": 284,
       "sleepAwakeMin": null,
       "leanMassLb": null,
       "muscleMassLb": null,
