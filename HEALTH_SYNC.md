@@ -61,16 +61,45 @@ If the file is empty or missing, the Health cards just stay hidden. Manual entri
 | `visceralFat` | number or null | Renpho visceral-fat rating |
 | `bmr` | number or null | kcal/day |
 
-Any field can be left out or set to `null`. All v4 fields are optional, so a v3 file still works unchanged.
+### Extra fields (v6, all optional)
+
+The Health › Vitals tab shows a tile with a trend line for **every numeric field** in the file.
+Add any of these to the exporter and they appear automatically, no app change needed:
+
+| field | Apple Health source | unit |
+|---|---|---|
+| `respiratoryRate` | Respiratory Rate (sleep average) | breaths/min |
+| `spo2` | Blood Oxygen | % |
+| `wristTempDeltaF` | Sleeping Wrist Temperature (deviation from baseline) | °F |
+| `walkingHR` | Walking Heart Rate Average | bpm |
+| `vo2max` | Cardio Fitness | mL/kg/min |
+| `basalKcal` | Resting Energy | kcal |
+| `exerciseMin` | Exercise Minutes | min |
+| `standHours` | Stand Hours | h |
+| `distanceMi` | Walking + Running Distance | mi |
+| `flights` | Flights Climbed | count |
+| `mindfulMin` | Mindful Minutes | min |
+| `daylightMin` | Time in Daylight | min |
+| `dietaryKcal` / `dietaryProteinG` / `waterOz` | Dietary Energy / Protein / Water | kcal / g / oz |
+
+A numeric field with any other name is shown too, under "Other", labelled from its key.
+
+Any field can be left out or set to `null`. A v3 file still works unchanged.
 
 The example values above only illustrate the format. They aren't real data.
 
 ## How it's used
-- Today rings: steps (a manual value for today overrides Health).
-- Readiness: last night's sleep, HRV against your 7-day baseline, resting HR, and days since your last lift.
-- Body chart: Health weights fill in days you didn't log by hand.
-- Body composition cards and the lean-vs-fat chart use the Renpho fields; the "Renpho · synced" chip appears once any scale data is present.
-- Sleep tab: last night's stages, duration vs the 8 h goal, bedtime vs 10:45 PM, 7/30-day chart, consistency (bedtime SD over 14 nights), 7-day sleep debt, HRV and resting-HR trends with a ±1 SD baseline band. Sleep debt of 5 h+ lowers readiness.
+- Overview dials (Lift's own formulas, not a wearable vendor's):
+  - **Sleep** = hours asleep ÷ sleep goal.
+  - **Recovery** = HRV vs your 30-day baseline (50%), resting HR vs baseline (20%), sleep (30%). Green ≥ 67, yellow 34–66, red < 34. Needs 5+ baseline readings for the HRV/RHR parts.
+  - **Strain** = active energy, steps and logged lifting sets, 0–100.
+- Readiness ("Push hard / Train normal / Go lighter") follows the recovery band, then steps down for 5 h+ sleep debt or lifting two days running.
+- Habits: sleep goal, step goal and bedtime tick themselves from this file. "What moves your recovery" compares next-morning recovery on days a habit was done vs missed.
+- Body chart: Health weights fill in days you didn't log by hand. Composition cards and the lean-vs-fat chart use the Renpho fields.
+- Sleep tab: stages, duration vs goal, bedtime vs target, 7/30-day chart, consistency, 7-day sleep debt, HRV and resting-HR trends with a ±1 SD band.
+- Vitals tab: 30/90-day recovery bars plus a tile per metric (latest, average, trend).
+
+Health data usually lands the morning after, so the Overview opens on the latest day that has data; use ‹ › to move between days.
 
 ## Producing the file
 Use any exporter that writes this JSON and commit it to the repo root as `health.json`
