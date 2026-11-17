@@ -1,0 +1,191 @@
+'use strict';
+// Lift v7 additions: coach, flexible training (exercise library, swaps, activities, schedule, templates), AI food log.
+
+function reWorkout(){const y=window.scrollY;workout();window.scrollTo(0,y)}
+const lbNow=()=>{const s=weightSeries();return s.length?s[s.length-1].lb:175};
+
+// ===== exercise library =====
+// name, muscle, compound
+const EXLIB=[['Bench Press','Chest',1],['Incline Bench Press','Chest',1],['Incline DB Press','Chest',1],['Flat DB Press','Chest',1],['Machine Chest Press','Chest',1],['Push-ups','Chest',1],['Dips','Chest',1],['Cable Fly','Chest',0],['Pec Deck','Chest',0],['DB Fly','Chest',0],
+ ['Pull-ups','Back',1],['Chin-ups','Back',1],['Lat Pulldown','Back',1],['Barbell Row','Back',1],['Seated Cable Row','Back',1],['Chest-Supported Row','Back',1],['One-Arm DB Row','Back',1],['T-Bar Row','Back',1],['Deadlift','Back',1],['Rack Pull','Back',1],['Straight-Arm Pulldown','Back',0],['Back Extension','Back',0],['Shrug','Back',0],
+ ['Overhead Press','Shoulders',1],['Seated DB Shoulder Press','Shoulders',1],['Machine Shoulder Press','Shoulders',1],['Arnold Press','Shoulders',1],['Lateral Raise','Shoulders',0],['Cable Lateral Raise','Shoulders',0],['Rear-Delt Fly','Shoulders',0],['Face Pull','Shoulders',0],['Front Raise','Shoulders',0],['Upright Row','Shoulders',0],
+ ['EZ Curl','Biceps',0],['Barbell Curl','Biceps',0],['Incline DB Curl','Biceps',0],['Hammer Curl','Biceps',0],['Preacher Curl','Biceps',0],['Cable Curl','Biceps',0],
+ ['Rope Pushdown','Triceps',0],['Overhead Triceps Extension','Triceps',0],['Skull Crusher','Triceps',0],['Close-Grip Bench Press','Triceps',1],['Triceps Dip Machine','Triceps',0],
+ ['Back Squat','Quads',1],['Front Squat','Quads',1],['Leg Press','Quads',1],['Hack Squat','Quads',1],['Bulgarian Split Squat','Quads',1],['Walking Lunge','Quads',1],['Goblet Squat','Quads',1],['Step-ups','Quads',1],['Leg Extension','Quads',0],
+ ['Romanian Deadlift','Hamstrings',1],['Good Morning','Hamstrings',1],['Leg Curl','Hamstrings',0],['Seated Leg Curl','Hamstrings',0],['Nordic Curl','Hamstrings',0],
+ ['Hip Thrust','Glutes',1],['Glute Bridge','Glutes',1],['Kettlebell Swing','Glutes',1],['Cable Kickback','Glutes',0],['Hip Abduction','Glutes',0],
+ ['Standing Calf Raise','Calves',0],['Seated Calf Raise','Calves',0],['Calf Raise','Calves',0],
+ ['Cable Crunch','Abs',0],['Hanging Leg Raise','Abs',0],['Plank','Abs',0],['Ab Wheel','Abs',0],['Russian Twist','Abs',0],['Pallof Press','Abs',0],['Farmer Carry','Abs',1]];
+const smallInc=m=>['Shoulders','Biceps','Triceps'].includes(m);
+// library + anything you've ever logged or programmed
+function exAll(){const m=new Map();for(const[n,mu,c]of EXLIB)m.set(norm(n),{name:n,muscle:mu,compound:!!c,inc:!c&&smallInc(mu)?2.5:5});
+ for(const d of S.days)for(const e of d.exercises)m.set(norm(e.name),{name:e.name,muscle:e.muscle,compound:!!e.compound,inc:e.inc||5,sets:e.sets,min:e.min,max:e.max,mine:1});
+ for(const s of S.sessions)for(const e of s.entries)if(!m.has(norm(e.name)))m.set(norm(e.name),{name:e.name,muscle:e.muscle||'Chest',compound:!!e.compound,inc:e.inc||5,mine:1});return[...m.values()]}
+function mkEntry(x,W){const ex={name:x.name,sets:x.sets||3,min:x.min||(x.compound?6:10),max:x.max||(x.compound?10:15),inc:x.inc||5};const t=target(ex,W.id);
+ return{exId:uid(),name:x.name,muscle:x.muscle,compound:!!x.compound,min:ex.min,max:ex.max,inc:ex.inc,sets:t.sets.map(s=>({w:s.w,r:s.r,rir:'',done:false}))}}
+function exPicker(title,onPick,muscle){let mu=muscle||'';openSheet(`<h3>${esc(title)}</h3><input id="exQ" placeholder="Search exercises" autocomplete="off" style="width:100%;margin-top:10px"><div class="chips" id="exM"></div><div id="exL" class="plist"></div>`);
+ const draw=()=>{const q=norm($('#exQ').value);$('#exM').innerHTML=['',...MUSCLES].map(m=>`<button class="pill ${m===mu?'on':''}" data-mu="${m}">${m||'All'}</button>`).join('');
+  const all=exAll();const L=all.filter(x=>(!mu||x.muscle===mu)&&(!q||norm(x.name).includes(q))).sort((a,b)=>(b.mine||0)-(a.mine||0)||a.name.localeCompare(b.name));
+  const exact=all.some(x=>norm(x.name)===q);
+  $('#exL').innerHTML=(q&&!exact?`<button class="prow" data-new="1"><b>Add “${esc($('#exQ').value.trim())}”</b><small>New ${mu||'Chest'} exercise · pick a muscle above first</small></button>`:'')+L.slice(0,60).map(x=>{const h=hist(x.name);const l=h[h.length-1];return`<button class="prow" data-n="${esc(x.name)}"><b>${esc(x.name)}</b><small>${x.muscle}${x.compound?' · compound':''}${l?' · last '+l.sets.map(s=>s.w+'×'+s.r).slice(0,3).join(', '):''}</small></button>`}).join('')||'<div class="mu sm" style="padding:14px 0">Nothing matches. Type a name to add your own.</div>'};
+ draw();$('#exQ').oninput=draw;const on=$('#exM .on');if(on&&mu)on.scrollIntoView({inline:'center',block:'nearest'});
+ $('#sheet').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.mu!==undefined){mu=b.dataset.mu;return draw()}
+  let x=null;if(b.dataset.new){const n=$('#exQ').value.trim();const m=mu||'Chest';x={name:n,muscle:m,compound:false,inc:smallInc(m)?2.5:5}}else if(b.dataset.n)x=exAll().find(q=>q.name===b.dataset.n);
+  if(x){closeSheet();onPick(x)}}}
+function exMenu(W,ei){const e=W.entries[ei];openSheet(`<h3>${esc(e.name)}</h3><div class="mu sm">${e.muscle||''}</div><div class="plist" style="max-height:none">
+ <button class="prow" data-a="swap"><b>Swap exercise</b><small>Machine taken or want a different ${esc((e.muscle||'').toLowerCase())} move</small></button>
+ <button class="prow" data-a="up"><b>Move up</b><small>Do it earlier</small></button><button class="prow" data-a="down"><b>Move down</b><small>Do it later</small></button>
+ <button class="prow" data-a="rm"><b style="color:var(--bad)">Skip today</b><small>Remove from this workout only; your program is unchanged</small></button></div>`);
+ $('#sheet').onclick=ev=>{const b=ev.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='swap')return exPicker('Swap '+e.name,x=>{W.entries[ei]=mkEntry(x,W);if(W===S.active)save();reWorkout()},e.muscle);
+  if(a==='rm'){if(e.sets.some(s=>s.done)&&!confirm('This exercise has logged sets. Remove it?'))return;W.entries.splice(ei,1)}
+  const j=a==='up'?ei-1:a==='down'?ei+1:-1;if(j>=0&&j<W.entries.length)[W.entries[ei],W.entries[j]]=[W.entries[j],W.entries[ei]];
+  if(W===S.active)save();closeSheet();reWorkout()}}
+function startEmpty(){S.active={id:uid(),date:Date.now(),dayId:null,dayName:'Custom workout',entries:[]};save();go('workout')}
+
+// ===== activities (cardio, sport, anything that isn't sets × reps) =====
+// name, MET at moderate effort
+const ACTS=[['Rowing machine',7],['Cycling',7],['Stationary bike',6.5],['Run',9.5],['Walk',3.5],['Hike',6],['Hockey',8],['Swim',7],['Stair climber',8.5],['Elliptical',5.5],['HIIT',9],['Basketball',7],['Soccer',8],['Tennis',7],['Pickleball',5],['Golf',4.5],['Skiing',6.5],['Skating',6],['Yoga',2.8],['Mobility',2.3],['Jump rope',10],['Boxing',8.5],['Climbing',7],['Kayak / paddle',5],['Sauna',1.5]];
+const EFF=[['Easy',.7,.5],['Moderate',1,.75],['Hard',1.25,1],['All-out',1.45,1.2]]; // label, MET multiplier, strain weight
+const actMet=n=>{const a=ACTS.find(x=>norm(x[0])===norm(n));return a?a[1]:6};
+const actKcal=(type,min,eff)=>Math.round(actMet(type)*EFF[eff][1]*(lbNow()/2.2046)*(min/60)/5)*5;
+function actsOn(d){const lo=ymdToT(d),hi=ymdToT(addDays(d,1));return S.acts.filter(a=>a.date>=lo&&a.date<hi)}
+const actLine=a=>`${a.min} min · ${EFF[a.eff][0]}${a.dist?' · '+a.dist+' mi':''} · ~${fmtN(a.kcal)} kcal`;
+function actSheet(done){const recent=[...new Set([...S.acts].reverse().map(a=>a.type))];const quick=[...new Set([...recent,'Rowing machine','Cycling','Hockey','Run','Walk','Stair climber'])].slice(0,8);
+ let eff=1,when=0;openSheet(`<h3>Log activity</h3><div class="mu sm">Cardio, a game, anything outside the weights.</div><div class="chips" id="acQ">${quick.map(q=>`<button class="pill" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+ <div class="f" style="grid-template-columns:1fr"><label>Activity<input id="acT" list="acList" placeholder="Search or type your own" autocomplete="off"><datalist id="acList">${ACTS.map(a=>`<option value="${a[0]}">`).join('')}</datalist></label></div>
+ <div class="k" style="margin-top:14px;text-align:center">Minutes</div><div class="bigstep"><button data-am="-5">−</button><input id="acM" inputmode="numeric" value="30"><button data-am="5">+</button></div>
+ <div class="k">Effort</div><div class="seg" id="acE">${EFF.map((e,i)=>`<button data-ef="${i}">${e[0]}</button>`).join('')}</div>
+ <div class="f" style="grid-template-columns:1fr 1fr"><label>Distance mi (optional)<input id="acD" type="number" inputmode="decimal" step="0.1" placeholder="—"></label><label>When<select id="acW"><option value="0">Today</option><option value="1">Yesterday</option><option value="2">2 days ago</option></select></label></div>
+ <div class="f" style="grid-template-columns:1fr"><label>Note (optional)<input id="acN" placeholder="e.g. beer league, 3 periods"></label></div>
+ <div class="mu sm" id="acK" style="margin-top:10px;text-align:center"></div><button class="big" id="acS" style="margin-top:10px">Save activity</button>`);
+ const upd=()=>{document.querySelectorAll('#acE button').forEach((b,i)=>b.classList.toggle('on',i===eff));document.querySelectorAll('#acQ button').forEach(b=>b.classList.toggle('on',norm(b.dataset.q)===norm($('#acT').value)));const m=+$('#acM').value||0,t=$('#acT').value.trim();$('#acK').textContent=t&&m?`About ${fmtN(actKcal(t,m,eff))} kcal at ${Math.round(lbNow())} lb. Counts toward today’s strain.`:''};
+ upd();$('#sheet').oninput=upd;
+ $('#sheet').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
+  if(b.dataset.q){$('#acT').value=b.dataset.q;return upd()}if(b.dataset.am){$('#acM').value=Math.max(5,(+$('#acM').value||0)+ +b.dataset.am);return upd()}if(b.dataset.ef){eff=+b.dataset.ef;return upd()}
+  if(b.id==='acS'){const t=$('#acT').value.trim(),m=Math.round(+$('#acM').value||0);if(!t)return $('#acT').focus();if(m<1)return;when=+$('#acW').value;const d=$('#acD').value;
+   S.acts.push({id:uid(),date:when?ymdToT(addDays(ymd(),-when))+18*36e5:Date.now(),type:t,min:m,eff,kcal:actKcal(t,m,eff),...(d!==''?{dist:+d}:{}),...($('#acN').value.trim()?{note:$('#acN').value.trim()}:{})});
+   save();if(navigator.vibrate)navigator.vibrate(15);closeSheet();toast(t+' logged');(done||render)()}}}
+
+// ===== weekly schedule + program templates =====
+const WD=['M','T','W','T','F','S','S'];
+function weekStrip(){const ws=ymd(weekStart()),t=ymd();return`<div class="wk">${WD.map((l,i)=>{const d=addDays(ws,i);const lo=ymdToT(d);const s=S.sessions.find(q=>q.date>=lo&&q.date<lo+dayMs);const a=actsOn(d).length;const plan=S.plan.days[i];
+ return`<div class="wd ${d===t?'now':''}"><span>${l}</span><i class="${s?'done':plan?(d<t?'missed':'plan'):''}">${s?'✓':''}</i><em>${s?esc(s.dayName.split(' ').map(w=>w[0]).join('').slice(0,3)):a?'•':plan&&d>=t?'lift':''}</em></div>`}).join('')}</div>`}
+const isTrainDay=(d=ymd())=>!!S.plan.days[(new Date(ymdToT(d)).getDay()+6)%7];
+function nextTrainLabel(){const t=ymd();for(let i=1;i<=7;i++){const d=addDays(t,i);if(isTrainDay(d))return i===1?'tomorrow':new Date(ymdToT(d)).toLocaleDateString(undefined,{weekday:'long'})}return'when you’re ready'}
+const TEMPLATES={
+ ul4:{name:'Upper / Lower',sub:'4 days · balanced size and strength',sched:[1,1,0,1,1,0,0],days:()=>defaultProgram()},
+ ppl3:{name:'Push / Pull / Legs',sub:'3 days · more work per session',sched:[1,0,1,0,1,0,0],days:()=>[
+  {id:uid(),name:'Push',exercises:[E('Incline DB Press',4,6,10,'Chest',1),E('Machine Chest Press',3,8,12,'Chest',1),E('Seated DB Shoulder Press',3,8,10,'Shoulders',1),E('Lateral Raise',4,12,20,'Shoulders',0,2.5),E('Cable Fly',3,12,15,'Chest',0),E('Rope Pushdown',3,10,15,'Triceps',0,2.5),E('Overhead Triceps Extension',3,10,15,'Triceps',0,2.5)]},
+  {id:uid(),name:'Pull',exercises:[E('Pull-ups',4,6,12,'Back',1),E('Chest-Supported Row',4,8,12,'Back',1),E('Lat Pulldown',3,10,12,'Back',1),E('Face Pull',3,15,20,'Shoulders',0),E('Rear-Delt Fly',3,15,20,'Shoulders',0),E('Incline DB Curl',3,10,15,'Biceps',0,2.5),E('Hammer Curl',3,10,12,'Biceps',0,2.5)]},
+  {id:uid(),name:'Legs',exercises:[E('Back Squat',4,6,10,'Quads',1),E('Romanian Deadlift',3,8,10,'Hamstrings',1),E('Leg Press',3,10,15,'Quads',1),E('Leg Curl',3,10,15,'Hamstrings',0),E('Leg Extension',3,12,15,'Quads',0),E('Standing Calf Raise',4,10,15,'Calves',0),E('Cable Crunch',3,12,15,'Abs',0)]}]},
+ fb3:{name:'Full Body',sub:'3 days · most efficient, good around sport',sched:[1,0,1,0,1,0,0],days:()=>[
+  {id:uid(),name:'Full Body A',exercises:[E('Back Squat',3,6,10,'Quads',1),E('Incline DB Press',3,6,10,'Chest',1),E('Chest-Supported Row',3,8,12,'Back',1),E('Leg Curl',3,10,15,'Hamstrings',0),E('Lateral Raise',3,12,20,'Shoulders',0,2.5),E('Rope Pushdown',2,10,15,'Triceps',0,2.5)]},
+  {id:uid(),name:'Full Body B',exercises:[E('Romanian Deadlift',3,8,10,'Hamstrings',1),E('Seated DB Shoulder Press',3,8,10,'Shoulders',1),E('Pull-ups',3,6,12,'Back',1),E('Leg Press',3,10,15,'Quads',1),E('Cable Fly',3,12,15,'Chest',0),E('Incline DB Curl',2,10,15,'Biceps',0,2.5)]},
+  {id:uid(),name:'Full Body C',exercises:[E('Hip Thrust',3,8,12,'Glutes',1),E('Flat DB Press',3,8,12,'Chest',1),E('Lat Pulldown',3,8,12,'Back',1),E('Walking Lunge',3,10,12,'Quads',1),E('Face Pull',3,15,20,'Shoulders',0),E('Cable Crunch',3,12,15,'Abs',0)]}]}};
+function planHTML(){return`<div class="card"><div class="k">Training days</div><div class="wk" style="margin-top:10px">${WD.map((l,i)=>`<button class="wdb ${S.plan.days[i]?'on':''}" data-pd="${i}">${l}</button>`).join('')}</div><div class="mu sm" style="margin-top:8px">${S.plan.days.filter(Boolean).length} lifting days a week. Workouts rotate in order, so a missed day just moves to the next one.</div></div>
+ <div class="card"><div class="k">Switch program</div><div class="plist" style="max-height:none;margin-top:4px">${Object.entries(TEMPLATES).map(([k,t])=>`<button class="prow" data-tpl="${k}"><b>${t.name}${S.plan.tpl===k?' <span class="badge">current</span>':''}</b><small>${t.sub}</small></button>`).join('')}</div><div class="mu sm">Your logged history and progression carry over to any exercise with the same name.</div></div>`}
+function bindPlan(){document.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pd;S.plan.days[i]=S.plan.days[i]?0:1;if(!S.plan.days.some(Boolean))S.plan.days[i]=1;S.goals.lifts=S.plan.days.filter(Boolean).length;save();const y=window.scrollY;program();window.scrollTo(0,y)});
+ document.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{const t=TEMPLATES[b.dataset.tpl];if(!confirm(`Switch to ${t.name}? This replaces your current program days. Logged workouts are kept.`))return;S.days=t.days();S.plan={tpl:b.dataset.tpl,days:[...t.sched]};S.goals.lifts=t.sched.filter(Boolean).length;progDay=0;save();toast(t.name+' is now your program');program();window.scrollTo(0,0)})}
+
+// ===== coach: reads everything and says what matters today =====
+function latestRec(){const t=ymd();for(let i=0;i<3;i++){const r=recovery(addDays(t,-i));if(r)return{r,i}}return null}
+function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const add=(tag,col,title,body,go_)=>out.push({tag,col,title,body,go:go_});
+ const lr=latestRec(),rd=readiness(),nd=nextDay(),lo=ymdToT(t);const todayS=S.sessions.filter(s=>s.date>=lo&&s.date<lo+dayMs);const recTxt=lr?`Recovery ${lr.r.score}%${lr.i?(lr.i===1?' yesterday':' two days ago'):''}`:'';
+ const n=weekCount(weekStart());const wsI=(new Date().getDay()+6)%7;const left=S.plan.days.slice(wsI+1).filter(Boolean).length;const behind=n+left<g.lifts;
+ const yA=actsOn(addDays(t,-1)).filter(a=>a.eff>=2&&a.min>=40)[0];const yNote=yA?` ${yA.type} yesterday (${yA.min} min, ${EFF[yA.eff][0].toLowerCase()}) is still in your legs.`:'';
+ // train
+ if(S.active)add('Train','var(--ac)','Workout in progress',`${S.active.dayName}: pick it back up.`,'workout');
+ else if(todayS.length){const s=todayS[todayS.length-1];const sm=summary(s);add('Train','var(--ac)',`${s.dayName} done`,`${sm.sets} set${sm.sets===1?'':'s'}${sm.vol?', '+fmtN(sm.vol)+' lb moved':''}. Get 30–40 g of protein in over the next couple of hours and you’ve done the job for today.`,'history')}
+ else if(nd&&(isTrainDay()||behind)){const ups=nd.exercises.filter(e=>target(e).up).length;const e0=nd.exercises[0],t0=e0&&target(e0);const first=t0&&t0.last?` First up: ${e0.name}, ${t0.sets[0].w} lb × ${t0.sets[0].r}.`:'';
+  const why=!isTrainDay()&&behind?' Not a scheduled day, but you need it to hit '+g.lifts+' this week.':'';
+  if(rd.lvl==='hard')add('Train','var(--good)',`Push ${nd.name} today`,`${recTxt||'You’re rested'}: go for the top of every rep range.${ups?` ${ups} lift${ups>1?'s are':' is'} due a weight jump.`:''}${first}${why}`,'home');
+  else if(rd.lvl==='normal')add('Train','var(--warn)',`${nd.name}: train as planned`,`${recTxt||'Middling readiness'}. Hit your targets, leave one rep in the tank on the big lifts.${first}${yNote}${why}`,'home');
+  else add('Train','var(--bad)',`${nd.name}, but hold back`,`${recTxt||'You’re run down'} (${rd.why.slice(1).join(', ')||'low readiness'}). Keep the weights, stop two reps short and drop the last set of the small lifts.${yNote}`,'home')}
+ else add('Train','var(--mu)','Rest day',`Next lift: ${nd?nd.name:'—'} ${nextTrainLabel()}. A walk toward ${fmtN(g.steps)} steps helps you recover without costing anything.${yNote}`,'home');
+ // sleep
+ const debt=sleepDebt(),con=consistency(),ns=sleepNights(7).filter(x=>x.hours!==null),last=lastSleep();
+ if(debt.n>=3&&debt.debt>=3){const[bh,bm]=g.bed.split(':').map(Number);const early=Math.min(60,Math.round(debt.debt*10/15)*15);add('Sleep','var(--sleep)',`${hm(debt.debt)} of sleep debt this week`,`Lights out by ${fmtMin(bh*60+bm-early)} tonight, ${early} min ahead of your usual target, to start paying it back.`,'sleep')}
+ else if(con&&con.sd>45)add('Sleep','var(--sleep)',`Bedtime swings ±${Math.round(con.sd)} min`,`You average ${fmtMin(con.avg)}. Holding ${fmtBed(g.bed)} every night is the cheapest recovery gain you have.`,'sleep');
+ else if(ns.length>=4)add('Sleep','var(--sleep)',`Sleep is on point`,`${hm(avg(ns.map(x=>x.hours)))} a night over the last ${ns.length} tracked nights. Keep ${fmtBed(g.bed)} as the anchor.`,'sleep');
+ // HRV trend
+ const h7=H.days.filter(x=>x.date>addDays(t,-8)&&num(x.hrv)!==null).map(x=>x.hrv),hb=baseAt('hrv',t);
+ if(h7.length>=4&&hb){const p=(avg(h7)-hb.mu)/hb.mu*100;if(p<=-8)add('Recovery','var(--bad)',`HRV is trending ${Math.abs(Math.round(p))}% under baseline`,'A week-long dip usually means sleep, stress or volume is piling up. Protect sleep and don’t add sets this week.','vitals');else if(p>=8)add('Recovery','var(--good)',`HRV is running ${Math.round(p)}% above baseline`,'Your body is absorbing the work. A good week to push the main lifts.','vitals')}
+ // fuel
+ const ft=foodTot(t),anyFood=[0,1,2,3].some(i=>foodDay(addDays(t,-i)).length),remP=Math.round(g.protein-ft.p),remK=Math.round(g.kcal-ft.k);
+ if(!anyFood)add('Fuel','#ff9f0a','Start logging what you eat','Tap Log food and just say it: “chicken burrito bowl, large, with guac”. Lift estimates calories and protein so your targets mean something.','food');
+ else if(remP>5){const meals=hr<11?3:hr<15?2:1;add('Fuel','#ff9f0a',`${remP} g of protein to go`,hr>=19?`That’s roughly a chicken breast plus a shake before bed.${remK>300?' You also have '+fmtN(remK)+' kcal left.':''}`:`About ${Math.round(remP/meals)} g at each of your next ${meals} meal${meals>1?'s':''}.${remK>300?' '+fmtN(remK)+' kcal left for the day.':''}`,'food')}
+ else add('Fuel','var(--good)','Protein goal hit',remK>300?`${fmtN(remK)} kcal still to eat if you want to stay on the gain target.`:'Calories are on target too.','food');
+ // body trend
+ const rate=weeklyRate();if(rate!==null&&(rate<g.gainLo||rate>g.gainHi))add('Body','var(--ac)',`Weight is moving ${rate>=0?'+':''}${r1(rate)} lb a week`,rateTip(rate),'body');
+ // movement
+ const st=[...Array(7)].map((_,i)=>stepsFor(addDays(t,-i-1))).filter(x=>x!==null);if(st.length>=4&&avg(st)<g.steps*.7)add('Move','var(--strain)',`Steps are averaging ${fmtN(avg(st))}`,`Your goal is ${fmtN(g.steps)}. One 20-minute walk adds about 2,000.`,'vitals');
+ // plateaus
+ const stl=allNames().filter(stalled);if(stl.length>=2)add('Program','var(--warn)',`Plateau on ${stl.slice(0,2).join(' and ')}${stl.length>2?' +'+(stl.length-2):''}`,'No estimated-1RM gain in three sessions. Take a deload week (10% lighter, one set fewer) or swap the variation from the ••• menu.','progress');
+ // health sync freshness
+ if(H.updated){const age=(Date.now()-new Date(H.updated).getTime())/36e5;if(age>30)add('Sync','var(--mu)',`Health data is ${Math.round(age/24)||1} day${age>=36?'s':''} old`,'Recovery and sleep are based on the last sync. Open your Health sync shortcut with the phone unlocked to refresh it.','vitals')}
+ return out}
+function coachHTML(){const c=coach().slice(0,5);return`<h2>Today’s read</h2><div class="card coach">${c.map(x=>`<button class="crow" data-cgo="${x.go}"><span class="ctag" style="color:${x.col}">${x.tag}</span><b>${esc(x.title)}</b><small>${esc(x.body)}</small></button>`).join('')}</div>`}
+
+// ===== fuel: AI food log =====
+const AIK='lift.ai';const aiKey=()=>{try{return localStorage.getItem(AIK)||''}catch(e){return''}};
+const FOOD_SCHEMA={type:'object',properties:{meal_name:{type:'string'},items:{type:'array',items:{type:'object',properties:{name:{type:'string'},portion:{type:'string'},kcal:{type:'number'},protein_g:{type:'number'},carbs_g:{type:'number'},fat_g:{type:'number'}},required:['name','portion','kcal','protein_g','carbs_g','fat_g'],additionalProperties:false}},confidence:{type:'string',enum:['low','medium','high']},note:{type:'string'}},required:['meal_name','items','confidence','note'],additionalProperties:false};
+const FOOD_SYS=`You estimate nutrition for one person's food log. They describe what they ate, send a photo, or both.
+
+Break the meal into its distinct foods and estimate calories, protein, carbs and fat for the amount actually eaten. Use any sizes they state. Where they don't, assume a typical portion for an adult man who lifts and is eating to gain lean mass, and write the amount you assumed in "portion" (for example "~6 oz cooked" or "1.5 cups") so he can correct it. Count cooking oil, butter, sauces, dressings and drinks: they are where estimates usually run low. For restaurant or packaged items you recognise, use their published numbers.
+
+Round calories to the nearest 10 and macros to the nearest gram. "meal_name" is a short label for the log, five words at most. "confidence" reflects how well the portions are pinned down. "note" is one short sentence only when something would change the numbers materially and is worth checking; otherwise an empty string.`;
+// Calls the Claude API straight from this device with the user's own key (single-user app, key never leaves the phone except to Anthropic).
+async function aiFood(messages){let r;try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':aiKey(),'anthropic-version':'2026-10-21','anthropic-beta':'server-side-fallback-2026-07-01','anthropic-dangerous-direct-browser-access':'true'},
+  body:JSON.stringify({model:'claude-opus-5-5',max_tokens:16000,fallbacks:'default',output_config:{effort:'low',format:{type:'json_schema',schema:FOOD_SCHEMA}},system:FOOD_SYS,messages})})}catch(e){throw new Error(navigator.onLine===false?'You’re offline. Use quick add below, or try again with signal.':'Couldn’t reach Claude. Check your connection and try again.')}
+ if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(r.status===401?'That API key was rejected. Check it in More.':r.status===429?'Rate limited. Give it a few seconds and try again.':r.status>=500?'Claude is busy right now. Try again in a moment.':(m||'Request failed ('+r.status+')'))}
+ const j=await r.json();if(j.stop_reason==='refusal')throw new Error('Couldn’t estimate that one. Try describing the food differently.');
+ const raw=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');let data;try{data=JSON.parse(raw)}catch(e){throw new Error('Got an incomplete answer. Try again.')}
+ if(!data.items||!data.items.length)throw new Error('No food found in that. Add a bit more detail.');return{raw,data}}
+function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const k=Math.min(1,1280/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.82))};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Couldn’t read that photo'))};img.src=url})}
+function logFood(e){const d=ymd();(S.food[d]=S.food[d]||[]).push({t:Date.now(),...e});if(e.fav!==false&&e.label&&e.k){const key=norm(e.label);S.favs=[{label:e.label,k:e.k,p:e.p,c:e.c||0,f:e.f||0},...S.favs.filter(x=>norm(x.label)!==key)].slice(0,10)}save();if(navigator.vibrate)navigator.vibrate(12)}
+function foodSheet(done){const fin=()=>{closeSheet();(done||render)()};let photo=null,msgs=[],res=null,busy=false;
+ openSheet(`<h3>Log food</h3>${S.favs.length?`<div class="k" style="margin-top:10px">Log again</div><div class="chips">${S.favs.map((x,i)=>`<button class="pill" data-fav="${i}">${esc(x.label)} <span class="mu">${fmtN(x.k)}</span></button>`).join('')}</div>`:''}
+ <textarea id="fdT" placeholder="Say what you ate and roughly how much. e.g. chicken burrito bowl with rice, beans and guac, large; plus a Coke Zero" style="margin-top:12px;min-height:88px"></textarea>
+ <div id="fdP"></div><div class="row" style="margin-top:8px"><label class="fbtn"><input type="file" id="fdF" accept="image/*" hidden>Add photo</label><button id="fdGo" style="flex:1;background:var(--ac);color:#00231a;border:0;font-weight:800">Estimate</button></div>
+ <div id="fdO"></div>
+ <div class="k" style="margin-top:18px">Quick add</div><div class="qa" style="margin-top:6px"><button data-qa="meal">Meal +75 g</button><button data-qa="shake">Shake +30 g</button></div>
+ <div class="f" style="grid-template-columns:1fr 1fr auto;align-items:end"><label>Protein g<input id="cP" type="number" inputmode="numeric" placeholder="0"></label><label>kcal<input id="cK" type="number" inputmode="numeric" placeholder="0"></label><button id="cAdd">Add</button></div>`);
+ const O=()=>$('#fdO');const tot=()=>res.items.reduce((a,x)=>({k:a.k+(+x.kcal||0),p:a.p+(+x.protein_g||0),c:a.c+(+x.carbs_g||0),f:a.f+(+x.fat_g||0)}),{k:0,p:0,c:0,f:0});
+ const keyBox=()=>{O().innerHTML=`<div class="card" style="background:var(--card2)"><div class="k">One-time setup</div><div class="mu sm" style="margin-top:4px">Estimating from a description or photo uses Claude through your own Anthropic API key. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">Create a key</a>, paste it here, and it stays on this phone.</div><div class="row" style="margin-top:8px"><input id="fdK" type="password" autocomplete="off" placeholder="sk-ant-…" style="flex:1;min-width:0"><button id="fdKS">Save</button></div></div>`};
+ const show=()=>{const t=tot();O().innerHTML=`<div class="fres"><div class="row sp"><div class="k">${esc(res.meal_name)}</div><span class="chip"><i style="background:${{high:'var(--good)',medium:'var(--warn)',low:'var(--bad)'}[res.confidence]}"></i>${res.confidence} confidence</span></div>
+  ${res.items.map((x,i)=>`<div class="fit"><div class="hn"><b>${esc(x.name)}</b><small>${esc(x.portion)} · ${Math.round(x.carbs_g)} g carbs · ${Math.round(x.fat_g)} g fat</small></div><label>kcal<input type="number" inputmode="numeric" data-fi="${i}" data-fk="kcal" value="${Math.round(x.kcal)}"></label><label>prot<input type="number" inputmode="numeric" data-fi="${i}" data-fk="protein_g" value="${Math.round(x.protein_g)}"></label><button class="mini danger" data-frm="${i}">✕</button></div>`).join('')}
+  <div class="ftot"><span><b id="ftK">${fmtN(t.k)}</b> kcal</span><span><b id="ftP">${Math.round(t.p)}</b> g protein</span><span>${Math.round(t.c)} g carbs</span><span>${Math.round(t.f)} g fat</span></div>
+  ${res.note?`<div class="mu sm" style="margin-top:6px">${esc(res.note)}</div>`:''}
+  <div class="row" style="margin-top:10px"><input id="fdFix" placeholder="Something off? e.g. “rice was 2 cups”" style="flex:1;min-width:0"><button id="fdFixGo">Fix</button></div>
+  <button class="big" id="fdAdd" style="margin-top:10px">Add to today</button></div>`};
+ const run=async(fix)=>{if(busy)return;if(!aiKey())return keyBox();const txt=$('#fdT').value.trim();
+  if(fix){msgs.push({role:'user',content:fix})}else{if(!txt&&!photo){$('#fdT').focus();return}const c=[];if(photo)c.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:photo.split(',')[1]}});c.push({type:'text',text:txt||'Estimate the meal in this photo.'});msgs=[{role:'user',content:c}]}
+  busy=true;const b=$('#fdGo');b.disabled=true;b.textContent='Estimating…';if(!res)O().innerHTML='<div class="mu sm" style="margin-top:12px">Working out portions and macros…</div>';const fb=$('#fdFixGo');if(fb){fb.disabled=true;fb.textContent='…'}
+  try{const r=await aiFood(msgs);if(!$('#fdO'))return;msgs.push({role:'assistant',content:r.raw});res=r.data;show()}
+  catch(e){if(fix)msgs.pop();if($('#fdO')){if(res)show();O().insertAdjacentHTML('afterbegin',`<div class="sm err" style="margin-top:10px">${esc(e.message)}</div>`)}}
+  busy=false;const b2=$('#fdGo');if(b2){b2.disabled=false;b2.textContent=res?'Re-estimate':'Estimate'}};
+ $('#fdF').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{photo=await shrinkPhoto(f);$('#fdP').innerHTML=`<div class="row" style="margin-top:8px"><img src="${photo}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px"><span class="mu sm" style="flex:1">Photo attached. Add a line of detail if anything isn’t obvious from the picture.</span><button class="mini" id="fdPX">Remove</button></div>`}catch(err){toast(err.message)}};
+ const sh=$('#sheet');
+ sh.oninput=ev=>{const i=ev.target.dataset.fi;if(i===undefined||!res)return;res.items[i][ev.target.dataset.fk]=+ev.target.value||0;const t=tot();$('#ftK').textContent=fmtN(t.k);$('#ftP').textContent=Math.round(t.p)};
+ sh.onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
+  if(b.dataset.fav){const x=S.favs[b.dataset.fav];logFood({label:x.label,k:x.k,p:x.p,c:x.c,f:x.f});toast(x.label+' logged');return fin()}
+  if(b.id==='fdGo')return run();if(b.id==='fdFixGo'){const v=$('#fdFix').value.trim();return v?run(v):$('#fdFix').focus()}
+  if(b.id==='fdPX'){photo=null;$('#fdP').innerHTML='';$('#fdF').value='';return}
+  if(b.id==='fdKS'){const k=$('#fdK').value.trim();if(!k)return;localStorage.setItem(AIK,k);O().innerHTML='';return run()}
+  if(b.dataset.frm){res.items.splice(+b.dataset.frm,1);return res.items.length?show():(res=null,O().innerHTML='')}
+  if(b.id==='fdAdd'){const t=tot();logFood({label:res.meal_name,k:Math.round(t.k),p:Math.round(t.p),c:Math.round(t.c),f:Math.round(t.f),src:'ai',items:res.items.map(x=>({n:x.name,q:x.portion,k:x.kcal,p:x.protein_g}))});toast(`${res.meal_name}: ${fmtN(t.k)} kcal, ${Math.round(t.p)} g protein`);return fin()}
+  if(b.dataset.qa){b.dataset.qa==='meal'?logFood({label:'Meal',k:800,p:75,fav:false}):logFood({label:'Shake',k:200,p:30,fav:false});return fin()}
+  if(b.id==='cAdd'){const p=+$('#cP').value||0,k=+$('#cK').value||0;if(!p&&!k)return;logFood({label:'Quick add',k,p,fav:false});return fin()}}}
+function fuelHTML(d){const g=S.goals,ft=foodTot(d),L=foodDay(d);const bar=(l,v,max,u,col)=>`<div class="pb"><div class="row sp"><span class="k">${l}</span><span class="num"><b>${fmtN(v)}</b><span class="mu sm"> / ${fmtN(max)}${u}</span></span></div><div class="bar"><i style="width:${Math.min(100,v/max*100)}%;${col?'background:'+col:''}"></i></div></div>`;
+ return`<h2>Fuel</h2><div class="card" id="fuel">${bar('Protein',ft.p,g.protein,' g')}${bar('Calories',ft.k,g.kcal,'','var(--strain)')}
+ ${ft.c||ft.f?`<div class="row mu sm" style="margin-top:10px;gap:16px"><span>Carbs <b style="color:var(--tx)">${Math.round(ft.c)} g</b></span><span>Fat <b style="color:var(--tx)">${Math.round(ft.f)} g</b></span></div>`:''}
+ ${L.length?`<div style="margin-top:10px">${L.map((x,i)=>`<div class="kv"><span>${esc(x.label||'Food')}</span><span class="num" style="white-space:nowrap">${fmtN(x.k||0)} kcal · ${Math.round(x.p||0)} g <button class="mini danger" data-fdel="${i}" aria-label="Remove">✕</button></span></div>`).join('')}</div>`:'<div class="mu sm" style="margin-top:10px">Nothing logged yet today.</div>'}
+ <button class="big" id="fLog" style="margin-top:12px">Log food</button></div>`}
+function bindFuel(re){const d=ymd();$('#fLog').onclick=()=>foodSheet(re);document.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{foodDay(d).splice(+b.dataset.fdel,1);if(!foodDay(d).length)delete S.food[d];save();re()})}
+
+// ---- boot (kept last so every script has loaded) ----
+Object.assign(window.LIFT,{coach,actsOn,exAll,aiFood});
+render();loadHealth();Store.init({get:()=>S,adopt,onStatus});
+setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},5*60e3);
+if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').then(r=>setInterval(()=>r.update().catch(()=>{}),30*60e3)).catch(()=>{})}
