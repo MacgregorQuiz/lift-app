@@ -102,6 +102,44 @@ The example values above only illustrate the format. They aren't real data.
 Health data usually lands the morning after, so the Overview opens on the latest day that has data; use ‹ › to move between days.
 
 ## Producing the file
-Use any exporter that writes this JSON and commit it to the repo root as `health.json`
-(for example, an iOS Shortcut that reads Health samples, builds the JSON, and pushes it through
-the GitHub API, or an export app plus a small script). Keep only real measured data in it.
+
+There are two ways to get data in. Both can run side by side.
+
+### 1. Replace the whole file (how it works today)
+Something on the phone builds the full JSON and commits it as `health.json`. Today that runs once a
+day at about 7:30 AM and writes **yesterday's** totals, which is why the app is always a day behind.
+
+### 2. Push small updates, as often as you like (recommended)
+`.github/workflows/health-ingest.yml` accepts a tiny payload and merges it into `health.json`
+(`tools/merge-health.mjs`). Only the days and fields you send are touched, and `null` never erases
+anything, so you can push today's running totals every half hour.
+
+One request from an iOS Shortcut ("Get Contents of URL"):
+
+```
+POST https://api.github.com/repos/MacgregorQuiz/lift-app/dispatches
+Authorization: Bearer <fine-grained token: this repo only, Contents = Read and write>
+Accept: application/vnd.github+json
+
+{"event_type":"health","client_payload":{"days":[
+  {"date":"2026-11-17","steps":5120,"activeKcal":310,"hrv":68,"restingHR":48,
+   "sleepHours":7.9,"bedtime":"2026-11-16T22:40:00-05:00","wakeTime":"2026-11-17T06:50:00-05:00"}
+]}}
+```
+
+The app picks the change up within about two minutes (Action run + Pages deploy) and re-checks the
+file every 5 minutes while it is open.
+
+### Why syncs go missing, and how to get close to every 30 minutes
+- **Health is locked while the phone is locked.** A Shortcut that runs at 7:30 AM on a locked phone
+  reads nothing, or only part of the data. That is what the gaps and the half-empty days are.
+  Trigger it when the phone is certain to be unlocked: the Sleep Focus "Waking Up" automation,
+  "When I open <an app you use every morning>", or "When CarPlay / charger connects".
+- **iOS has no "every 30 minutes" trigger.** The closest you can get with Shortcuts is several
+  Time of Day automations (for example every hour from 7 AM to 10 PM, "Run Immediately" on), each
+  running the same Shortcut. Runs that land while the phone is locked simply send nothing, and the
+  merge keeps what is already there.
+- Send **today's** date with running totals as well as yesterday's final numbers, so the Overview
+  stops lagging a day.
+
+Keep only real measured data in the file.

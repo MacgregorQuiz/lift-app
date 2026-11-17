@@ -1,0 +1,29 @@
+name: Health ingest
+# Lets the phone push small Health updates as often as it likes:
+#   POST https://api.github.com/repos/<owner>/<repo>/dispatches
+#   {"event_type":"health","client_payload":{"days":[{"date":"2026-11-17","steps":5120,"activeKcal":310}]}}
+on:
+  repository_dispatch:
+    types: [health]
+permissions:
+  contents: write
+concurrency:
+  group: health-ingest
+  cancel-in-progress: false
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Merge payload into health.json
+        env:
+          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+        run: node tools/merge-health.mjs health.json
+      - name: Commit
+        run: |
+          git config user.name "HealthBOT"
+          git config user.email "healthbot@users.noreply.github.com"
+          git add health.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Health sync $(date -u +%Y-%m-%dT%H:%MZ)"
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push

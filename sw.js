@@ -1,9 +1,9 @@
-const C='lift-v6';const A=['./','index.html','style.css','store.js','app.js','manifest.json','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png'];
-self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A)));self.skipWaiting()});
+const C='lift-v7';const A=['./','index.html','style.css','store.js','app.js','plus.js','manifest.json','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png'];
+self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A.map(u=>new Request(u,{cache:'reload'})))));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
-self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);
- // health.json: always network-first, never served stale unless offline
- if(u.pathname.endsWith('/health.json')){e.respondWith(fetch(r,{cache:'no-store'}).then(res=>{if(res.ok){const cp=res.clone();caches.open(C).then(c=>c.put('health.json',cp))}return res}).catch(()=>caches.match('health.json').then(m=>m||new Response('{"updated":null,"days":[]}',{headers:{'Content-Type':'application/json'}}))));return}
- // page navigations: network-first so updates show up, cache fallback offline
- if(r.mode==='navigate'){e.respondWith(fetch(r).then(res=>{const cp=res.clone();caches.open(C).then(c=>c.put('index.html',cp));return res}).catch(()=>caches.match('index.html')));return}
- e.respondWith(caches.match(r,{ignoreSearch:true}).then(m=>m||fetch(r).then(res=>{const cp=res.clone();caches.open(C).then(c=>c.put(r,cp));return res}).catch(()=>caches.match('index.html'))))});
+// Same-origin GETs: try the network (fresh code + fresh health.json), fall back to cache when offline or slow.
+const key=r=>{const u=new URL(r.url);return r.mode==='navigate'?'index.html':u.origin+u.pathname};
+function fresh(r,ms){return new Promise((res,rej)=>{const t=setTimeout(()=>rej(new Error('slow')),ms);fetch(r,{cache:'no-store'}).then(x=>{clearTimeout(t);if(x.ok){const cp=x.clone();caches.open(C).then(c=>c.put(key(r),cp))}res(x)},e=>{clearTimeout(t);rej(e)})})}
+self.addEventListener('fetch',e=>{const r=e.request;if(r.method!=='GET')return;const u=new URL(r.url);if(u.origin!==location.origin)return;
+ const hj=u.pathname.endsWith('/health.json');
+ e.respondWith(fresh(r,hj?8000:3000).catch(()=>caches.match(key(r)).then(m=>m||(hj?new Response('{"updated":null,"days":[]}',{headers:{'Content-Type':'application/json'}}):fetch(r)))))});

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#000000">
 <meta name="color-scheme" content="dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="style.css?v6">
+<link rel="stylesheet" href="style.css?v7">
 <title>Lift</title>
 </head><body>
 <header id="top"><div><div id="sub"></div><h1 id="title">Lift</h1></div><div id="topRight"></div></header>
@@ -24,6 +24,9 @@
 <button data-v="health"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2.5-6 4 12 2.5-6H22"/></svg><span>Health</span></button>
 <button data-v="more"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>More</span></button>
 </nav>
-<script src="store.js?v6"></script>
-<script src="app.js?v6"></script>
+<script>/* when a new version takes over, reload once so old and new files never mix */
+if('serviceWorker'in navigator){let had=!!navigator.serviceWorker.controller,done=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(had&&!done){done=true;location.reload()}had=true})}</script>
+<script src="store.js?v7"></script>
+<script src="app.js?v7"></script>
+<script src="plus.js?v7"></script>
 </body></html>
