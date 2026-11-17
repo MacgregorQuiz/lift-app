@@ -99,7 +99,7 @@ function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const a
  else if(todayS.length){const s=todayS[todayS.length-1];const sm=summary(s);add('Train','var(--ac)',`${s.dayName} done`,`${sm.sets} set${sm.sets===1?'':'s'}${sm.vol?', '+fmtN(sm.vol)+' lb moved':''}. Get 30–40 g of protein in over the next couple of hours and you’ve done the job for today.`,'history')}
  else if(nd&&(isTrainDay()||behind)){const ups=nd.exercises.filter(e=>target(e).up).length;const e0=nd.exercises[0],t0=e0&&target(e0);const first=t0&&t0.last?` First up: ${e0.name}, ${t0.sets[0].w} lb × ${t0.sets[0].r}.`:'';
   const why=!isTrainDay()&&behind?' Not a scheduled day, but you need it to hit '+g.lifts+' this week.':'';
-  if(rd.lvl==='hard')add('Train','var(--good)',`Push ${nd.name} today`,`${recTxt||'You’re rested'}: go for the top of every rep range.${ups?` ${ups} lift${ups>1?'s are':' is'} due a weight jump.`:''}${first}${why}`,'home');
+  if(rd.lvl==='hard')add('Train','var(--good)',`Push ${nd.name} today`,`${recTxt||'You’re rested'}: go for the top of every rep range. Strain target ${strainTarget('g').join('–')}.${ups?` ${ups} lift${ups>1?'s are':' is'} due a weight jump.`:''}${first}${why}`,'home');
   else if(rd.lvl==='normal')add('Train','var(--warn)',`${nd.name}: train as planned`,`${recTxt||'Middling readiness'}. Hit your targets, leave one rep in the tank on the big lifts.${first}${yNote}${why}`,'home');
   else add('Train','var(--bad)',`${nd.name}, but hold back`,`${recTxt||'You’re run down'} (${rd.why.slice(1).join(', ')||'low readiness'}). Keep the weights, stop two reps short and drop the last set of the small lifts.${yNote}`,'home')}
  else add('Train','var(--mu)','Rest day',`Next lift: ${nd?nd.name:'—'} ${nextTrainLabel()}. A walk toward ${fmtN(g.steps)} steps helps you recover without costing anything.${yNote}`,'home');
@@ -184,8 +184,56 @@ function fuelHTML(d){const g=S.goals,ft=foodTot(d),L=foodDay(d);const bar=(l,v,m
  <button class="big" id="fLog" style="margin-top:12px">Log food</button></div>`}
 function bindFuel(re){const d=ymd();$('#fLog').onclick=()=>foodSheet(re);document.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{foodDay(d).splice(+b.dataset.fdel,1);if(!foodDay(d).length)delete S.food[d];save();re()})}
 
+// ===== plain-language explanations: every score says what it is, how it's built and what to do with it =====
+function explain(k,D){const g=S.goals,t=ymd();let d=D;if(!d){d=t;for(let i=0;i<4;i++){const x=addDays(t,-i);if(recovery(x)||sleepRec(x).hours!==null){d=x;break}}}
+ const row=(l,v,sub)=>`<div class="kv"><span>${l}${sub?`<br><span class="mu sm">${sub}</span>`:''}</span><span style="color:var(--tx);font-weight:600;white-space:nowrap">${v}</span></div>`;const P=x=>`<p class="xp">${x}</p>`;let h='',goBtn='';
+ if(k==='sleep'){const r=sleepRec(d),sp=sleepPerf(d);goBtn='sleep';h=`<h3>Sleep ${sp===null?'':sp+'%'}</h3>${P('How much of the sleep you need you actually got.')}
+  ${r.hours===null?P('No sleep recorded for this day yet.'):row('Asleep',hm(r.hours))+row('Your need',g.sleep+' h','set in More › Goals')+(r.bed?row('In bed',fmtMin(tod(r.bed))+' → '+fmtMin(tod(r.wake))):'')}
+  ${P('<b>Read it like this:</b> 100% means you got all of it. 85% or more is a solid night. Under 70% and you will feel it in the gym.')}${P('This counts time actually asleep, not time in bed. Getting '+g.sleep+' h asleep usually takes about '+r1(g.sleep+.6)+' h in bed.')}`}
+ else if(k==='rec'){const r=recovery(d);goBtn='vitals';const dir=(v,mu,up)=>{const p=(v-mu)/mu*100;return Math.abs(p)<3?'right at your normal':(p>0?'above':'below')+' your normal, which '+((p>0)===up?'helps':'pulls the score down')};
+  h=`<h3>Recovery ${r?r.score+'%':''}</h3>${P('How ready your body is today, compared with <b>your own</b> normal. It is not a comparison with anyone else.')}
+  ${r?(r.hrv?row('Heart-rate variability',Math.round(r.hrv.v)+' ms',`${dir(r.hrv.v,r.hrv.mu,true)} (${Math.round(r.hrv.mu)}) · half the score`):'')+(r.rhr?row('Resting heart rate',Math.round(r.rhr.v)+' bpm',`${dir(r.rhr.v,r.rhr.mu,false)} (${Math.round(r.rhr.mu)}) · a fifth of the score`):'')+(r.sleep!==undefined?row('Sleep',r.sleep+'%','about a third of the score'):''):P('Needs heart-rate variability or resting heart rate from your watch, plus about a week of history.')}
+  ${P('<b style="color:var(--good)">Green, 67+</b>: better than your usual. Push.<br><b style="color:var(--warn)">Yellow, 34–66</b>: a normal day. Train as planned.<br><b style="color:var(--bad)">Red, under 34</b>: run down. Go lighter or rest.')}${P('An ordinary day after an ordinary night lands around 60, so most days should be yellow. Higher variability and a lower resting pulse than usual both mean you have recovered well.')}`}
+ else if(k==='strain'){const s_=strain(d),r=recovery(d)||(latestRec()||{}).r,tg=r?strainTarget(r.band):null;goBtn='home';
+  h=`<h3>Strain ${s_?s_.score:''}</h3>${P('How much you asked of your body that day, on a 0 to 100 scale. It is a score, not a percentage of anything.')}
+  ${s_?row('Lifting',s_.sets?s_.sets+' sets':'none')+(s_.acts.length?s_.acts.map(a=>row(esc(a.type),a.min+' min',EFF[a.eff][0].toLowerCase())).join(''):row('Activities','none'))+row('Active calories',s_.kcal===null?'not synced':fmtN(s_.kcal))+row('Steps',s_.steps===null?'not synced':fmtN(s_.steps)):P('Nothing recorded for this day yet.')}
+  ${P('<b>Under 25</b> light · <b>25–50</b> moderate · <b>50–75</b> high · <b>75+</b> all out. Each source has diminishing returns, so a second hard session adds less than the first.')}${tg?P(`<b>Today’s target: ${tg[0]}–${tg[1]}.</b> With recovery ${r.band==='g'?'in the green you can take on a big day':r.band==='y'?'in the yellow a normal session fits':'in the red keep it easy'}.`):''}`}
+ else if(k==='debt'){const sd=sleepDebt();goBtn='sleep';h=`<h3>Sleep debt ${sd.n?hm(sd.debt):''}</h3>${P('The sleep you still owe yourself from the last week: every night under your '+g.sleep+' h need adds to it, every night over pays some back.')}
+  ${sd.nights.map(n=>{const x=n.hours-g.sleep;return row(fmtD(ymdToT(n.date)),hm(n.hours),`<span style="color:${x>=0?'var(--good)':'var(--bad)'}">${x>=0?'+':'−'}${hm(Math.abs(x)).replace(/^0h /,'')}</span> vs need`)}).join('')||P('No nights tracked this week.')}
+  ${P('<b>Read it like this:</b> under 2 h is normal life. 2–5 h, get to bed earlier for a few nights. Over 5 h, Lift stops telling you to push hard until you pay it down.')}${P('Nights your watch did not record are left out, not counted as zero.')}`}
+ else if(k==='cons'){const c=consistency();goBtn='sleep';h=`<h3>Bedtime consistency</h3>${P('How much your bedtime moves around from night to night over the last two weeks. A steady schedule improves sleep quality even at the same number of hours.')}
+  ${c?row('Bedtime varies by','±'+Math.round(c.sd)+' min','usually '+fmtMin(c.avg))+(c.wsd!==null?row('Wake time varies by','±'+Math.round(c.wsd)+' min','usually '+fmtMin(c.wavg)):'')+row('Verdict',c.label):P('Needs at least three tracked nights.')}
+  ${P('<b>±30 min or less</b>: locked in. <b>±30–60</b>: fairly steady. <b>Over ±60</b>: irregular, and the easiest thing to fix. Your target is lights out by '+fmtBed(g.bed)+'.')}`}
+ else if(k==='streak'){goBtn='habits';h=`<h3>Streaks</h3>${P('A streak counts the days you did the habit. The stack streak counts strong days: days where you did at least 80% of what you track, so one stubborn habit does not zero out the whole day.')}
+  ${P('<b>Never miss twice.</b> One missed day does not reset a streak; it just does not count. Two misses in a row ends it. Research on habit formation found that a single miss barely slows a habit down, while quitting after a miss is what kills it.')}
+  ${P('<b>The 66.</b> Next to each streak is how many times you have done the habit out of 66. That is the average number of repetitions before a behaviour starts to feel automatic. Some take three weeks, some take months.')}
+  ${P('<b>Why stacks.</b> Each stack starts “after” something you already do every day. Tying a new habit to an existing cue is the most reliable way found so far to make it stick. Change the cues under Edit.')}`}
+ openSheet(h+`<div class="row" style="margin-top:14px">${goBtn&&goBtn!==view?`<button id="xGo" style="flex:1">Open details</button>`:''}<button class="big" id="xOk" style="flex:1;min-height:44px">Got it</button></div>`);$('#xOk').onclick=closeSheet;if($('#xGo'))$('#xGo').onclick=()=>go(goBtn)}
+
+// ===== reminders: calendar alerts (work with the app closed, no server needed) =====
+const PEP=['New week. Set the tone today.','You never regret the session you showed up for.','Midweek is where the gains are made.','One more rep than last time. That’s the whole job.','Finish the week strong.','Extra work, extra result.','Start the week ahead.'];
+const BYDAY=['MO','TU','WE','TH','FR','SA','SU'];
+function buildICS(){const r=S.rem,g=S.goals,p2=n=>String(n).padStart(2,'0');const now=new Date();const stamp=now.toISOString().replace(/[-:]|\.\d+/g,'');
+ const url=location.origin+location.pathname;const escT=x=>String(x).replace(/([,;\\])/g,'\\$1');
+ // first date on/after today that falls on weekday i (0 = Monday), as a floating local time
+ const first=(i,hhmm)=>{const d=new Date();d.setHours(0,0,0,0);while(((d.getDay()+6)%7)!==i)d.setDate(d.getDate()+1);return d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'T'+hhmm.replace(':','')+'00'};
+ const ev=(uid,start,rule,dur,title,desc)=>['BEGIN:VEVENT','UID:lift-'+uid+'@lift-app','DTSTAMP:'+stamp,'DTSTART:'+start,'DURATION:PT'+dur+'M','RRULE:'+rule,'SUMMARY:'+escT(title),'DESCRIPTION:'+escT(desc),'URL:'+url,'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+escT(title),'TRIGGER:PT0M','END:VALARM','END:VEVENT'];
+ let L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Lift//Reminders//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Lift'];let n=0;
+ if(r.on.gym)S.plan.days.forEach((on,i)=>{if(!on)return;n++;L=L.concat(ev('gym-'+i,first(i,r.gym),'FREQ=WEEKLY;BYDAY='+BYDAY[i],75,'Lift time. '+PEP[i],'Open Lift for today’s workout, targets and how hard to push. '+url))});
+ if(r.on.bed){const[bh,bm]=g.bed.split(':').map(Number);const m=((bh*60+bm-45)%1440+1440)%1440;n++;L=L.concat(ev('bed',first((now.getDay()+6)%7,p2(Math.floor(m/60))+':'+p2(m%60)),'FREQ=DAILY',45,'Wind down. Lights out at '+fmtBed(g.bed),'Screens off, tomorrow’s recovery starts now. Evening stack: '+(S.habits.filter(h=>h.stack==='pm').map(h=>h.name).join(', ')||'none')+'.'))}
+ if(r.on.am){n++;L=L.concat(ev('am',first((now.getDay()+6)%7,r.wake),'FREQ=DAILY',10,'Morning stack: '+(S.habits.filter(h=>h.stack==='am').map(h=>h.name).join(' → ')||'check in'),'After '+S.cues.am+'. Open Lift and tick them off. '+url))}
+ return{text:L.concat('END:VCALENDAR').join('\r\n')+'\r\n',n}}
+function remindSheet(){const r=S.rem,days=S.plan.days.map((on,i)=>on?['Mon','Tue','Wed','Thu','Fri','Sat','Sun'][i]:null).filter(Boolean).join(', ');
+ const tg=(k,l,sub)=>`<label class="tg"><input type="checkbox" data-ron="${k}" ${r.on[k]?'checked':''}><span><b>${l}</b><small>${sub}</small></span></label>`;
+ openSheet(`<h3>Reminders</h3><div class="mu sm" style="margin-top:4px">These go into your phone’s Calendar as repeating alerts, so they arrive at the right time even when Lift is closed.</div>
+ ${tg('gym','Gym time','On your training days ('+days+') with a different push each day')}<div class="f" style="grid-template-columns:1fr 1fr"><label>Gym time<input id="rGym" type="time" value="${r.gym}"></label><label>Wake time<input id="rWake" type="time" value="${r.wake}"></label></div>
+ ${tg('bed','Wind-down','Every night, 45 min before your '+fmtBed(S.goals.bed)+' lights-out')}${tg('am','Morning stack','Every morning at wake time, listing your morning habits')}
+ <button class="big" id="rAdd" style="margin-top:14px">Add to Calendar</button><div class="mu sm" style="margin-top:8px">Your phone will show the events and ask to add them. To change or stop them later, delete the “Lift” events in Calendar (choose “all future events”), then add again from here.</div>`);
+ const sv=()=>{document.querySelectorAll('[data-ron]').forEach(c=>r.on[c.dataset.ron]=c.checked?1:0);if(/^\d\d:\d\d$/.test($('#rGym').value))r.gym=$('#rGym').value;if(/^\d\d:\d\d$/.test($('#rWake').value))r.wake=$('#rWake').value;save()};
+ $('#sheet').onchange=sv;$('#rAdd').onclick=()=>{sv();const o=buildICS();if(!o.n)return toast('Turn on at least one reminder');dl('lift-reminders.ics',o.text,'text/calendar');toast(o.n+' reminder'+(o.n>1?'s':'')+' ready to add')}}
+
 // ---- boot (kept last so every script has loaded) ----
-Object.assign(window.LIFT,{coach,actsOn,exAll,aiFood});
+Object.assign(window.LIFT,{buildICS,explain,coach,actsOn,exAll,aiFood});
 render();loadHealth();Store.init({get:()=>S,adopt,onStatus});
 setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},5*60e3);
 if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').then(r=>setInterval(()=>r.update().catch(()=>{}),30*60e3)).catch(()=>{})}

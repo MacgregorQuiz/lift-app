@@ -1,4 +1,4 @@
-const C='lift-v7';const A=['./','index.html','style.css','store.js','app.js','plus.js','manifest.json','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png'];
+const C='lift-v8';const A=['./','index.html','style.css','store.js','app.js','plus.js','manifest.json','icons/icon-192.png','icons/icon-512.png','icons/apple-touch-icon.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(A.map(u=>new Request(u,{cache:'reload'})))));self.skipWaiting()});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
 // Same-origin GETs: try the network (fresh code + fresh health.json), fall back to cache when offline or slow.

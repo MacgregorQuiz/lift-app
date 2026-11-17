@@ -90,9 +90,10 @@ The example values above only illustrate the format. They aren't real data.
 
 ## How it's used
 - Overview dials (Lift's own formulas, not a wearable vendor's):
-  - **Sleep** = hours asleep ÷ sleep goal.
-  - **Recovery** = HRV vs your 30-day baseline (50%), resting HR vs baseline (20%), sleep (30%). Green ≥ 67, yellow 34–66, red < 34. Needs 5+ baseline readings for the HRV/RHR parts.
-  - **Strain** = active energy, steps and logged lifting sets, 0–100.
+  - **Sleep** = hours asleep ÷ sleep goal (time asleep, not time in bed).
+  - **Recovery** = HRV vs your 30-day baseline (50%), resting HR vs baseline (20%), sleep (30%). A normal day lands near 60. Green ≥ 67, yellow 34–66, red < 34. Needs HRV or resting HR with 5+ baseline readings; a night of sleep alone does not produce a score.
+  - **Strain** = lifting sets, logged activities, active energy and steps, 0–100 (a score, not a percentage). Target range follows recovery: green 50–80, yellow 30–55, red under 30.
+  - **Sleep debt** = shortfall against the sleep goal over the last 7 tracked nights; nights above the goal pay it back.
 - Readiness ("Push hard / Train normal / Go lighter") follows the recovery band, then steps down for 5 h+ sleep debt or lifting two days running.
 - Habits: sleep goal, step goal and bedtime tick themselves from this file. "What moves your recovery" compares next-morning recovery on days a habit was done vs missed.
 - Body chart: Health weights fill in days you didn't log by hand. Composition cards and the lean-vs-fat chart use the Renpho fields.
