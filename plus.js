@@ -120,6 +120,8 @@ function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const a
  const rate=weeklyRate();if(rate!==null&&(rate<g.gainLo||rate>g.gainHi))add('Body','var(--ac)',`Weight is moving ${rate>=0?'+':''}${r1(rate)} lb a week`,rateTip(rate),'body');
  // movement
  const st=[...Array(7)].map((_,i)=>stepsFor(addDays(t,-i-1))).filter(x=>x!==null);if(st.length>=4&&avg(st)<g.steps*.7)add('Move','var(--strain)',`Steps are averaging ${fmtN(avg(st))}`,`Your goal is ${fmtN(g.steps)}. One 20-minute walk adds about 2,000.`,'vitals');
+ // screen time
+ const sc=scrDays(7).filter(q=>q.x);if(sc.length>=3&&avg(sc.map(q=>q.x.min))>g.screen*1.15){const top=(sc[sc.length-1].x.top||[])[0];add('Focus','var(--purple)',`Screen time is averaging ${hm(avg(sc.map(q=>q.x.min))/60)}`,`Your limit is ${hm(g.screen/60)}.${top?' Biggest lately: '+top.n+'.':''} Late screens also push your bedtime back.`,'vitals')}
  // plateaus
  const stl=allNames().filter(stalled);if(stl.length>=2)add('Program','var(--warn)',`Plateau on ${stl.slice(0,2).join(' and ')}${stl.length>2?' +'+(stl.length-2):''}`,'No estimated-1RM gain in three sessions. Take a deload week (10% lighter, one set fewer) or swap the variation from the ••• menu.','progress');
  // health sync freshness
@@ -136,12 +138,12 @@ Break the meal into its distinct foods and estimate calories, protein, carbs and
 
 Round calories to the nearest 10 and macros to the nearest gram. "meal_name" is a short label for the log, five words at most. "confidence" reflects how well the portions are pinned down. "note" is one short sentence only when something would change the numbers materially and is worth checking; otherwise an empty string.`;
 // Calls the Claude API straight from this device with the user's own key (single-user app, key never leaves the phone except to Anthropic).
-async function aiFood(messages){let r;try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':aiKey(),'anthropic-version':'2026-10-21','anthropic-beta':'server-side-fallback-2026-07-01','anthropic-dangerous-direct-browser-access':'true'},
-  body:JSON.stringify({model:'claude-opus-5-5',max_tokens:16000,fallbacks:'default',output_config:{effort:'low',format:{type:'json_schema',schema:FOOD_SCHEMA}},system:FOOD_SYS,messages})})}catch(e){throw new Error(navigator.onLine===false?'You’re offline. Use quick add below, or try again with signal.':'Couldn’t reach Claude. Check your connection and try again.')}
+async function aiJSON(system,schema,messages){let r;try{r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':aiKey(),'anthropic-version':'2026-10-21','anthropic-beta':'server-side-fallback-2026-07-01','anthropic-dangerous-direct-browser-access':'true'},
+  body:JSON.stringify({model:'claude-opus-5-5',max_tokens:16000,fallbacks:'default',output_config:{effort:'low',format:{type:'json_schema',schema}},system,messages})})}catch(e){throw new Error(navigator.onLine===false?'You’re offline. Enter it by hand, or try again with signal.':'Couldn’t reach Claude. Check your connection and try again.')}
  if(!r.ok){let m='';try{m=(await r.json()).error.message}catch(e){}throw new Error(r.status===401?'That API key was rejected. Check it in More.':r.status===429?'Rate limited. Give it a few seconds and try again.':r.status>=500?'Claude is busy right now. Try again in a moment.':(m||'Request failed ('+r.status+')'))}
- const j=await r.json();if(j.stop_reason==='refusal')throw new Error('Couldn’t estimate that one. Try describing the food differently.');
- const raw=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');let data;try{data=JSON.parse(raw)}catch(e){throw new Error('Got an incomplete answer. Try again.')}
- if(!data.items||!data.items.length)throw new Error('No food found in that. Add a bit more detail.');return{raw,data}}
+ const j=await r.json();if(j.stop_reason==='refusal')throw new Error('Couldn’t read that one. Try a different description or photo.');
+ const raw=(j.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');try{return{raw,data:JSON.parse(raw)}}catch(e){throw new Error('Got an incomplete answer. Try again.')}}
+async function aiFood(messages){const r=await aiJSON(FOOD_SYS,FOOD_SCHEMA,messages);if(!r.data.items||!r.data.items.length)throw new Error('No food found in that. Add a bit more detail.');return r}
 function shrinkPhoto(file){return new Promise((res,rej)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{const k=Math.min(1,1280/Math.max(img.width,img.height));const c=document.createElement('canvas');c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext('2d').drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',.82))};img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('Couldn’t read that photo'))};img.src=url})}
 function logFood(e){const d=ymd();(S.food[d]=S.food[d]||[]).push({t:Date.now(),...e});if(e.fav!==false&&e.label&&e.k){const key=norm(e.label);S.favs=[{label:e.label,k:e.k,p:e.p,c:e.c||0,f:e.f||0},...S.favs.filter(x=>norm(x.label)!==key)].slice(0,10)}save();if(navigator.vibrate)navigator.vibrate(12)}
 function foodSheet(done){const fin=()=>{closeSheet();(done||render)()};let photo=null,msgs=[],res=null,busy=false;
@@ -232,8 +234,38 @@ function remindSheet(){const r=S.rem,days=S.plan.days.map((on,i)=>on?['Mon','Tue
  const sv=()=>{document.querySelectorAll('[data-ron]').forEach(c=>r.on[c.dataset.ron]=c.checked?1:0);if(/^\d\d:\d\d$/.test($('#rGym').value))r.gym=$('#rGym').value;if(/^\d\d:\d\d$/.test($('#rWake').value))r.wake=$('#rWake').value;save()};
  $('#sheet').onchange=sv;$('#rAdd').onclick=()=>{sv();const o=buildICS();if(!o.n)return toast('Turn on at least one reminder');dl('lift-reminders.ics',o.text,'text/calendar');toast(o.n+' reminder'+(o.n>1?'s':'')+' ready to add')}}
 
+// ===== screen time =====
+// iOS gives no app (or Shortcut) access to Screen Time numbers, so they come in by screenshot or by hand.
+const SCR_SCHEMA={type:'object',properties:{days:{type:'array',items:{type:'object',properties:{date:{type:'string'},total_min:{type:'number'},pickups:{type:'number'},top_apps:{type:'array',items:{type:'object',properties:{name:{type:'string'},min:{type:'number'}},required:['name','min'],additionalProperties:false}}},required:['date','total_min','pickups','top_apps'],additionalProperties:false}},note:{type:'string'}},required:['days','note'],additionalProperties:false};
+const SCR_SYS=`You read iPhone Screen Time screenshots for one person's tracker.
+
+Return one entry for each day whose total screen time is printed as a number in the screenshot. "date" is YYYY-MM-DD, worked out from the labels in the image ("Today", "Yesterday", a weekday, or a date) and the current date given in the message. "total_min" is that day's total in minutes. In a week view, include only days with an exact printed figure; never estimate from bar heights, and never use the "daily average" as a day. "pickups" is that day's pickup count if shown, otherwise 0. "top_apps" lists up to five apps with their minutes when they clearly belong to that single day, otherwise an empty list. "note" is one short sentence if something could not be read, otherwise an empty string. If the image is not a Screen Time screen, return no days and say so in "note".`;
+const scrDays=n=>{const t=ymd();return[...Array(n)].map((_,i)=>{const d=addDays(t,i-n+1);return{d,x:S.screen[d]||null}})};
+function screenHTML(){const g=S.goals.screen,D=scrDays(14),have=D.filter(q=>q.x),last=[...D].reverse().find(q=>q.x),w=scrDays(7).filter(q=>q.x),mx=Math.max(g*1.5,...have.map(q=>q.x.min));
+ return`<h2>Screen time</h2><div class="card"><div class="row sp"><div><div class="stat">${last?hm(last.x.min/60):'—'}</div><div class="mu sm">${last?`${dayLabel(last.d).toLowerCase()} · limit ${hm(g/60)}${last.x.pk?' · '+last.x.pk+' pickups':''}`:'Nothing logged yet'}</div></div>${w.length?`<div style="text-align:right"><div class="k">7-day avg</div><div class="stat" style="font-size:20px;color:${avg(w.map(q=>q.x.min))<=g?'var(--good)':'var(--warn)'}">${hm(avg(w.map(q=>q.x.min))/60)}</div></div>`:''}</div>
+ ${have.length?`<div class="rbars" style="height:64px;background:none">${D.map(q=>`<i style="height:${q.x?Math.max(4,q.x.min/mx*100):0}%;background:${q.x?(q.x.min<=g?'var(--good)':'var(--warn)'):'none'}"></i>`).join('')}</div><div class="row sp mu sm"><span>14 days</span><span>green = under your limit</span></div>`:''}
+ ${last&&last.x.top&&last.x.top.length?`<div style="margin-top:8px">${last.x.top.slice(0,4).map(a=>`<div class="kv"><span>${esc(a.n)}</span><span>${hm(a.m/60)}</span></div>`).join('')}</div>`:''}
+ <button id="scrAdd" style="width:100%;margin-top:12px">Log screen time</button></div>`}
+function screenSheet(done){const fin=()=>{closeSheet();(done||render)()};let found=null;
+ openSheet(`<h3>Screen time</h3><div class="mu sm" style="margin-top:4px">iPhone doesn’t let any app read Screen Time, so add it one of two ways. Fastest: screenshot <b>Settings › Screen Time › See All App & Website Activity</b> and Lift reads it.</div>
+ <label class="fbtn" style="width:100%;margin-top:12px"><input type="file" id="scF" accept="image/*" hidden>Read a screenshot</label><div id="scO"></div>
+ <div class="k" style="margin-top:18px">Or type it in</div><div class="f" style="grid-template-columns:1.3fr 1fr 1fr 1fr;align-items:end"><label>Day<select id="scW"><option value="0">Today</option><option value="1" selected>Yesterday</option><option value="2">2 days ago</option></select></label><label>Hours<input id="scH" type="number" inputmode="numeric" placeholder="0"></label><label>Min<input id="scM" type="number" inputmode="numeric" placeholder="0"></label><label>Pickups<input id="scP" type="number" inputmode="numeric" placeholder="opt."></label></div>
+ <button id="scS" style="width:100%;margin-top:8px">Save</button>
+ <div class="f" style="grid-template-columns:1fr auto;align-items:end;margin-top:14px"><label>Daily limit (hours)<input id="scG" type="number" inputmode="decimal" step="0.25" value="${r1(S.goals.screen/60)}"></label><button id="scGS">Set</button></div>`);
+ const O=()=>$('#scO');
+ $('#scF').onchange=async e=>{const f=e.target.files[0];if(!f)return;if(!aiKey()){O().innerHTML='<div class="sm err" style="margin-top:8px">Reading screenshots uses your Claude API key. Add it under More › AI food logging, or type the numbers in below.</div>';return}
+  O().innerHTML='<div class="mu sm" style="margin-top:8px">Reading the screenshot…</div>';
+  try{const img=await shrinkPhoto(f);const now=new Date();const r=await aiJSON(SCR_SYS,SCR_SCHEMA,[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:img.split(',')[1]}},{type:'text',text:`Today is ${ymd()} (${now.toLocaleDateString('en-US',{weekday:'long'})}).`}]}]);if(!$('#scO'))return;
+   found=(r.data.days||[]).filter(x=>/^\d{4}-\d\d-\d\d$/.test(x.date)&&x.date<=ymd()&&x.total_min>0&&x.total_min<=1440);
+   O().innerHTML=found.length?`<div class="fres">${found.map(x=>`<div class="kv"><span>${fmtD(ymdToT(x.date))}</span><span style="color:var(--tx)">${hm(x.total_min/60)}${x.pickups?' · '+x.pickups+' pickups':''}</span></div>`).join('')}${r.data.note?`<div class="mu sm">${esc(r.data.note)}</div>`:''}<button class="big" id="scOK" style="margin-top:10px">Save ${found.length} day${found.length>1?'s':''}</button></div>`:`<div class="sm err" style="margin-top:8px">${esc(r.data.note||'Couldn’t find a daily total in that screenshot.')}</div>`}
+  catch(err){if($('#scO'))O().innerHTML=`<div class="sm err" style="margin-top:8px">${esc(err.message)}</div>`}};
+ $('#sheet').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;
+  if(b.id==='scOK'&&found){for(const x of found)S.screen[x.date]={min:Math.round(x.total_min),...(x.pickups?{pk:Math.round(x.pickups)}:{}),top:(x.top_apps||[]).slice(0,5).map(a=>({n:a.name,m:Math.round(a.min)})),src:'shot'};save();toast('Screen time saved');return fin()}
+  if(b.id==='scS'){const m=(+$('#scH').value||0)*60+(+$('#scM').value||0);if(m<=0||m>1440)return $('#scH').focus();const d=addDays(ymd(),-+$('#scW').value),pk=$('#scP').value;S.screen[d]={min:Math.round(m),...(pk!==''?{pk:Math.round(+pk)}:{}),src:'manual'};save();toast('Screen time saved');return fin()}
+  if(b.id==='scGS'){const v=+$('#scG').value;if(v>0&&v<=24){S.goals.screen=Math.round(v*60);save();toast('Limit set to '+hm(v))}}}}
+
 // ---- boot (kept last so every script has loaded) ----
-Object.assign(window.LIFT,{buildICS,explain,coach,actsOn,exAll,aiFood});
+Object.assign(window.LIFT,{screenHTML,aiJSON,buildICS,explain,coach,actsOn,exAll,aiFood});
 render();loadHealth();Store.init({get:()=>S,adopt,onStatus});
 setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},5*60e3);
 if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').then(r=>setInterval(()=>r.update().catch(()=>{}),30*60e3)).catch(()=>{})}

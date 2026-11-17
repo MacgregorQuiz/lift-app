@@ -14,18 +14,18 @@ function defaultProgram(){return[
 let S=load();
 const STACKS=[['am','Morning'],['day','Daytime'],['pm','Evening']];
 const STC={am:'#ffd84d',day:'#19e3b1',pm:'#7c8cff'};
-const AUTO={weigh:'weigh-in logged',sleep:'sleep goal from Health',lift:'logged workout',meal:'meal-prep check-in',pro:'protein goal',steps:'step goal',bed:'bedtime from Health'};
+const AUTO={weigh:'weigh-in logged',sleep:'sleep goal from Health',lift:'logged workout',meal:'meal-prep check-in',pro:'protein goal',steps:'step goal',bed:'bedtime from Health',screen:'screen time under your limit'};
 function defaultHabits(){return[
  {id:'h_weigh',name:'Weigh in',stack:'am',auto:'weigh'},{id:'h_sleep',name:'Hit sleep goal',stack:'am',auto:'sleep'},{id:'h_creatine',name:'Creatine',stack:'am'},
  {id:'h_lift',name:'Workout',stack:'day',auto:'lift'},{id:'h_meal',name:'Eat prepped meals',stack:'day',auto:'meal'},{id:'h_pro',name:'Protein goal',stack:'day',auto:'pro'},{id:'h_steps',name:'Step goal',stack:'day',auto:'steps'},
  {id:'h_screens',name:'Screens off before bed',stack:'pm'},{id:'h_bed',name:'In bed on time',stack:'pm',auto:'bed'}]}
 function migrate(s){s.sessions=s.sessions||[];s.active=s.active||null;s.settings=Object.assign({restCompound:120,restIso:90},s.settings||{});
- s.goals=Object.assign({sleep:8,kcal:2800,protein:165,steps:8000,lifts:4,bed:'22:45',gainLo:0.25,gainHi:0.5},s.goals||{});
+ s.goals=Object.assign({sleep:8,kcal:2800,protein:165,steps:8000,lifts:4,bed:'22:45',gainLo:0.25,gainHi:0.5,screen:180},s.goals||{});
  s.body=s.body||{};s.body.weights=s.body.weights||[];s.body.meas=s.body.meas||[];
  s.food=s.food||{};s.manual=s.manual||{};s.notes=s.notes||{};
  s.meals=s.meals||{};s.settings.eatOutCost=s.settings.eatOutCost??25;s.settings.prepCost=s.settings.prepCost??6.5;
  if(!s.habits){const d=new Date();const since=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');s.habits=defaultHabits().map(h=>({...h,since}))}
- s.hlog=s.hlog||{};s.cues=Object.assign({am:'I wake up',day:'I sit down for lunch',pm:'I brush my teeth'},s.cues||{});s.rem=Object.assign({gym:'17:30',wake:'07:00',on:{gym:1,bed:1,am:0}},s.rem||{});s.acts=s.acts||[];s.favs=s.favs||[];if(!s.plan||!Array.isArray(s.plan.days))s.plan={tpl:'ul4',days:[1,1,0,1,1,0,0]};s.mt=s.mt||0;s.v=7;return s}
+ s.hlog=s.hlog||{};s.screen=s.screen||{};if((s.v||0)<9&&!s.habits.some(h=>h.auto==='screen')){const d=new Date();s.habits.push({id:'h_screen',name:'Screen time under limit',stack:'pm',auto:'screen',since:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})}s.cues=Object.assign({am:'I wake up',day:'I sit down for lunch',pm:'I brush my teeth'},s.cues||{});s.rem=Object.assign({gym:'17:30',wake:'07:00',on:{gym:1,bed:1,am:0}},s.rem||{});s.acts=s.acts||[];s.favs=s.favs||[];if(!s.plan||!Array.isArray(s.plan.days))s.plan={tpl:'ul4',days:[1,1,0,1,1,0,0]};s.mt=s.mt||0;s.v=9;return s}
 // mt = last-modified time; it decides which copy is newest when restoring or syncing
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.days){s.mt=s.mt||1;return migrate(s)}}catch(e){}return migrate({days:defaultProgram(),sessions:[],active:null,settings:{restCompound:120,restIso:90}})}
 const MEMO=new Map();function memo(k,fn){if(MEMO.has(k))return MEMO.get(k);const v=fn();MEMO.set(k,v);return v}
@@ -216,7 +216,7 @@ function data(){$('#title').textContent='More';$('#sub').textContent='Memory & s
  <button id="gSave" style="width:100%;margin-top:10px">Save goals</button><div class="mu sm" style="margin-top:6px">Gain = target lb per week. Every score, ring and habit uses these.</div></div>
  <h2>Backup files</h2><div class="card"><div class="row wrap"><button id="xj">Export JSON</button><button id="xc">Workouts CSV</button><button id="cp">Copy CSV</button><button id="xh">Habits CSV</button></div>
  <div class="k" style="margin-top:14px">Import JSON</div><div class="mu sm">Replaces all data on this device.</div><input type="file" id="imp" accept=".json,application/json" style="margin-top:8px;width:100%;padding-top:10px"></div>
- <button class="danger" id="wipe" style="width:100%;margin-top:14px">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v8</div>`;
+ <button class="danger" id="wipe" style="width:100%;margin-top:14px">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v9</div>`;
  Store.snaps().then(l=>{const sel=$('#snapSel');if(!sel||view!=='data')return;sel.innerHTML=l.length?l.map(x=>`<option value="${x.key}">${x.key==='before-restore'?'Before last restore/sync':fmtD(ymdToT(x.key))} · ${x.n} workouts</option>`).join(''):'<option value="">None yet</option>'});
  $('#snapGo').onclick=()=>{const k=$('#snapSel').value;if(!k)return;if(confirm('Replace the data on this device with this restore point? Your current data is kept as "Before last restore".'))Store.restore(k).catch(e=>alert(e.message))};
  if(s.linked){$('#syNow').onclick=()=>Store.sync();$('#syOff').onclick=()=>{if(confirm('Stop syncing? Data stays on this device and in your gist.'))Store.disconnect()}}
@@ -550,6 +550,7 @@ function hv(h,d){switch(h.auto){
  case'pro':{const f=S.food[d];return f&&f.length?(foodTot(d).p>=S.goals.protein?1:0):null}
  case'steps':{const x=stepsFor(d);return x===null?null:(x>=S.goals.steps?1:0)}
  case'bed':{const b=sleepRec(addDays(d,1)).bed;const late=b?bedLate(b):null;return late===null?null:(late<=15?1:0)} // that night's bedtime, known the next morning
+ case'screen':{const x=S.screen[d];return x?(x.min<=S.goals.screen?1:0):null}
  default:return h.since&&d<h.since?null:((S.hlog[d]||{})[h.id]?1:0)}}
 function hDetail(h,d){const g=S.goals;switch(h.auto){
  case'weigh':{const w=weightSeries().find(p=>p.date===d);return w?r1(w.lb)+' lb':'Step on the scale'}
@@ -559,6 +560,7 @@ function hDetail(h,d){const g=S.goals;switch(h.auto){
  case'pro':return Math.round(foodTot(d).p)+' / '+g.protein+' g';
  case'steps':{const x=stepsFor(d);return x===null?'Waiting for Health sync':fmtN(x)+' / '+fmtN(g.steps)}
  case'bed':return'Lights out by '+fmtBed(g.bed)+' · confirmed tomorrow';
+ case'screen':{const x=S.screen[d];return x?hm(x.min/60)+' of '+hm(g.screen/60)+' limit':'Log today’s total tomorrow morning'}
  default:return(S.hlog[d]||{})[h.id]?'Done':'Tap to check off'}}
 // Streaks follow "never miss twice": one missed day is forgiven (it just doesn't count), two in a row ends the run.
 function runLen(val){const t=ymd();let n=0,gap=0,missed=false;for(let i=0;i<400&&gap<7;i++){const v=val(addDays(t,-i));if(v===null){gap++;continue}gap=0;if(v){n++;missed=false}else if(i===0)continue;else if(missed)break;else missed=true}return n}
@@ -599,7 +601,7 @@ function habits(keep){const t=ymd();$('#title').textContent='Habits';$('#sub').t
   const row=ev.target.closest('.hrow');if(!row)return;const x=S.habits.find(q=>q.id===row.dataset.h);if(!x)return;
   if(!x.auto){toggleHabit(x,t);stackDone(x.stack);return habits(1)}
   if(x.auto==='meal'){const m=Object.assign({out:[]},mealDay(t));m.prep=((m.prep||0)+1)%3;setMeal(t,m);stackDone(x.stack);return habits(1)}
-  go({weigh:'body',lift:'home',pro:'today',steps:'today',sleep:'sleep',bed:'sleep'}[x.auto])}}
+  if(x.auto==='screen')return screenSheet(()=>habits(1));go({weigh:'body',lift:'home',pro:'today',steps:'today',sleep:'sleep',bed:'sleep'}[x.auto])}}
 function habitSheet(){openSheet(`<h3>Edit habits</h3><div class="mu sm" style="margin-top:4px">List order is the order you do them. Auto habits tick themselves from your data.</div><div class="k" style="margin-top:12px">Each stack starts after…</div><div class="f" style="grid-template-columns:1fr">${STACKS.map(([k,l])=>`<label>${l}: after<input data-cue="${k}" value="${esc(S.cues[k])}"></label>`).join('')}</div><div class="k" style="margin-top:14px">Habits</div><div id="hl" style="margin-top:2px"></div>
  <div class="k" style="margin-top:16px">Add a habit</div><div class="f" style="grid-template-columns:1fr 1fr"><label style="grid-column:1/-1">Name<input id="hnN" placeholder="e.g. Read 10 pages"></label><label>Stack<select id="hnS">${STACKS.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></label><label>Tracked by<select id="hnT"></select></label></div>
  <button id="hnAdd" style="width:100%;margin-top:8px">Add habit</button><button class="big" id="hDone" style="margin-top:14px">Done</button>`);
@@ -644,10 +646,11 @@ function vitals(){const t=ymd();$('#title').textContent='Health';$('#sub').textC
  ${rs.length?`<div class="rbars">${rb.map(x=>`<i style="height:${x?x.score:0}%;background:${x?BAND[x.band]:'none'}"></i>`).join('')}</div><div class="row sp mu sm"><span>avg <b style="color:var(--tx)">${Math.round(avg(rs.map(x=>x.score)))}%</b></span><span><span style="color:var(--good)">●</span> ${cnt('g')} <span style="color:var(--warn)">●</span> ${cnt('y')} <span style="color:var(--bad)">●</span> ${cnt('r')} days</span></div>
  ${L?`<div class="brk"><div><div class="k">HRV</div><div class="stat" style="font-size:20px">${L.hrv?Math.round(L.hrv.v):'—'}</div><div class="mu sm">${L.hrv?'baseline '+Math.round(L.hrv.mu):'no baseline'}</div></div><div><div class="k">Resting HR</div><div class="stat" style="font-size:20px">${L.rhr?Math.round(L.rhr.v):'—'}</div><div class="mu sm">${L.rhr?'baseline '+Math.round(L.rhr.mu):'no baseline'}</div></div><div><div class="k">Sleep</div><div class="stat" style="font-size:20px">${L.sleep!==undefined?L.sleep+'%':'—'}</div><div class="mu sm">of ${S.goals.sleep} h need</div></div></div>
  <div class="mu sm" style="margin-top:10px">${dayLabel(Ld)}: <b style="color:${BAND[L.band]}">${L.score}%</b>. <button class="info" data-ex="rec">i</button></div>`:''}`:'<div class="mu sm" style="margin-top:8px">Needs HRV or sleep from Health. It fills in as soon as health.json has a few days of data.</div>'}</div>`;
+ h+=screenHTML();
  let grp='';for(const m of list){if(m[5]!==grp){if(grp)h+='</div>';grp=m[5];h+=`<h2>${grp}</h2><div class="grid2">`}h+=tile(m)}if(grp)h+='</div>';
  if(!list.length)h+='<div class="card mu sm">No Health data yet. See HEALTH_SYNC.md for how the file is produced.</div>';
  else if(missing.length)h+=`<h2>Not in your export yet</h2><div class="card mu sm">${missing.join(' · ')}<div style="margin-top:8px">Add any of these to the Health export and a tile appears here automatically. Field names are in HEALTH_SYNC.md.</div></div>`;
- const V=$('#view');V.innerHTML=h;V.onclick=ev=>{const b=ev.target.closest('[data-vr]');if(b){vRange=+b.dataset.vr;vitals()}}}
+ const V=$('#view');V.innerHTML=h;$('#scrAdd').onclick=()=>screenSheet(vitals);V.onclick=ev=>{const b=ev.target.closest('[data-vr]');if(b){vRange=+b.dataset.vr;vitals()}}}
 
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-ex]');if(b){ev.stopPropagation();explain(b.dataset.ex)}},true);
 window.LIFT={habitDay,habitStats,savings,mealsCSV,habitsCSV,get S(){return S},get H(){return H},target,nextDay,stalled,e1rm,toCSV,readiness,recovery,sleepPerf,strain,hv,dayStack,stackStreak,hStreak,runLen,weekRate,impact,weightSeries,sleepRec,sleepDebt,consistency,leanFatSeries,compLatest,weeklyRate,loadHealth};

@@ -5,6 +5,12 @@ name: Health ingest
 on:
   repository_dispatch:
     types: [health]
+  workflow_dispatch:   # manual run from the Actions tab, for testing
+    inputs:
+      payload:
+        description: 'JSON: {"days":[{"date":"YYYY-MM-DD","steps":1234}]}'
+        required: false
+        default: '{}'
 permissions:
   contents: write
 concurrency:
@@ -17,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Merge payload into health.json
         env:
-          PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          PAYLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.payload || toJson(github.event.client_payload) }}
         run: node tools/merge-health.mjs health.json
       - name: Commit
         run: |
