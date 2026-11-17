@@ -201,3 +201,16 @@ main{min-height:100vh}
 .fit .hn small{white-space:normal}
 .ftot{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);color:var(--mu);font-size:13px}.ftot b{font:700 20px/1 var(--num);color:var(--tx)}
 button:disabled{opacity:.5}
+
+/* ===== v8 ===== */
+.info{min-height:0;width:20px;height:20px;padding:0;border-radius:50%;font:italic 700 12px/1 Georgia,serif;color:var(--mu);background:none;border:1.5px solid #3a444c;flex:none;position:relative}
+.info::after{content:"";position:absolute;inset:-12px}
+.xp{margin:10px 0;color:#c8d0d6;font-size:14.5px;line-height:1.5}.xp b{color:#fff}
+.hrow.cue{min-height:34px;padding-top:8px;padding-bottom:4px}.hrow.cue .node{width:12px;height:12px;margin:0 7px;border-color:#3a444c;background:#3a444c}.hrow.cue.on .node{background:var(--c);border-color:var(--c)}
+.hrow.cue .hn small{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.hrow.cue:not(:last-child)::after{top:calc(50% + 8px);height:calc(100% - 4px)}
+.hstk{text-align:right}.hstk em{display:block;font:600 10px/1.2 -apple-system,system-ui;color:var(--mu);letter-spacing:.04em;margin-top:3px}
+.linkrow{width:100%;background:none;border:0;border-top:1px solid var(--line);border-radius:0;min-height:46px;padding:0;font-weight:500;color:var(--tx)}.linkrow:first-child{border-top:0}
+.tg{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);margin-top:10px}
+.tg input{width:24px;height:24px;min-height:0;padding:0;accent-color:var(--ac);flex:none;margin-top:2px}
+.tg b{display:block;font-weight:600}.tg small{display:block;color:var(--mu);font-size:12.5px;margin-top:2px}
