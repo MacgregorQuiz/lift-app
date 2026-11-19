@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-18T07:35:00-05:00",
+ "updated": "2026-11-18T20:56:36-05:00",
  "days": [
   {
    "date": "2026-09-26",
@@ -865,17 +865,19 @@
   },
   {
    "date": "2026-11-18",
-   "hrv": 62.08,
-   "restingHR": 44,
-   "spo2": 99,
-   "respiratoryRate": 15,
+   "steps": 3103,
    "sleepHours": 8.11,
    "sleepScore": 99,
+   "hrv": 62.08,
+   "restingHR": 44,
+   "activeKcal": 106,
    "bedtime": "2026-11-17T21:38:00-05:00",
    "wakeTime": "2026-11-18T06:50:00-05:00",
    "sleepDeepMin": 81,
    "sleepRemMin": 115,
-   "sleepLightMin": 290
+   "sleepLightMin": 290,
+   "spo2": 99,
+   "respiratoryRate": 15
   }
  ]
 }
