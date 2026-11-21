@@ -18,19 +18,19 @@ const EXLIB=[['Bench Press','Chest',1],['Incline Bench Press','Chest',1],['Incli
  ['Cable Crunch','Abs',0],['Hanging Leg Raise','Abs',0],['Plank','Abs',0],['Ab Wheel','Abs',0],['Russian Twist','Abs',0],['Pallof Press','Abs',0],['Farmer Carry','Abs',1]];
 const smallInc=m=>['Shoulders','Biceps','Triceps'].includes(m);
 // library + anything you've ever logged or programmed
-function exAll(){const m=new Map();for(const[n,mu,c]of EXLIB)m.set(norm(n),{name:n,muscle:mu,compound:!!c,inc:!c&&smallInc(mu)?2.5:5});
- for(const d of S.days)for(const e of d.exercises)m.set(norm(e.name),{name:e.name,muscle:e.muscle,compound:!!e.compound,inc:e.inc||5,sets:e.sets,min:e.min,max:e.max,mine:1});
- for(const s of S.sessions)for(const e of s.entries)if(!m.has(norm(e.name)))m.set(norm(e.name),{name:e.name,muscle:e.muscle||'Chest',compound:!!e.compound,inc:e.inc||5,mine:1});return[...m.values()]}
-function mkEntry(x,W){const ex={name:x.name,sets:x.sets||3,min:x.min||(x.compound?6:10),max:x.max||(x.compound?10:15),inc:x.inc||5};const t=target(ex,W.id);
- return{exId:uid(),name:x.name,muscle:x.muscle,compound:!!x.compound,min:ex.min,max:ex.max,inc:ex.inc,sets:t.sets.map(s=>({w:s.w,r:s.r,rir:'',done:false}))}}
+function exAll(){const m=new Map();for(const[n,mu,c]of EXLIB){const e={name:n,muscle:mu,compound:!!c,inc:!c&&smallInc(mu)?2.5:5};m.set(TrainingCoach.key(e),e)}
+ for(const d of S.days)for(const e of d.exercises)m.set(TrainingCoach.key(e),{...e,mine:1});
+ for(const s of S.sessions)for(const e of s.entries)if(!m.has(TrainingCoach.key(e)))m.set(TrainingCoach.key(e),{...e,sets:e.plannedSetCount||e.sets.length||3,mine:1});return[...m.values()]}
+function mkEntry(x,W){const ex={...x,sets:x.sets||3,min:x.min||(x.compound?6:10),max:x.max||(x.compound?10:15),inc:x.inc||5};const t=target(ex,W.id);
+ return{...TrainingCoach.equipment(x),notes:'',plannedSetCount:t.sets.length,exId:uid(),name:x.name,muscle:x.muscle,compound:!!x.compound,min:ex.min,max:ex.max,inc:ex.inc,sets:t.sets.map(s=>({w:s.w,r:s.r,rir:'',done:false}))}}
 function exPicker(title,onPick,muscle){let mu=muscle||'';openSheet(`<h3>${esc(title)}</h3><input id="exQ" placeholder="Search exercises" autocomplete="off" style="width:100%;margin-top:10px"><div class="chips" id="exM"></div><div id="exL" class="plist"></div>`);
  const draw=()=>{const q=norm($('#exQ').value);$('#exM').innerHTML=['',...MUSCLES].map(m=>`<button class="pill ${m===mu?'on':''}" data-mu="${m}">${m||'All'}</button>`).join('');
   const all=exAll();const L=all.filter(x=>(!mu||x.muscle===mu)&&(!q||norm(x.name).includes(q))).sort((a,b)=>(b.mine||0)-(a.mine||0)||a.name.localeCompare(b.name));
   const exact=all.some(x=>norm(x.name)===q);
-  $('#exL').innerHTML=(q&&!exact?`<button class="prow" data-new="1"><b>Add “${esc($('#exQ').value.trim())}”</b><small>New ${mu||'Chest'} exercise · pick a muscle above first</small></button>`:'')+L.slice(0,60).map(x=>{const h=hist(x.name);const l=h[h.length-1];return`<button class="prow" data-n="${esc(x.name)}"><b>${esc(x.name)}</b><small>${x.muscle}${x.compound?' · compound':''}${l?' · last '+l.sets.map(s=>s.w+'×'+s.r).slice(0,3).join(', '):''}</small></button>`}).join('')||'<div class="mu sm" style="padding:14px 0">Nothing matches. Type a name to add your own.</div>'};
+  $('#exL').innerHTML=(q&&!exact?`<button class="prow" data-new="1"><b>Add “${esc($('#exQ').value.trim())}”</b><small>New ${mu||'Chest'} exercise · pick a muscle above first</small></button>`:'')+L.slice(0,60).map(x=>{const h=hist(x);const l=h[h.length-1];return`<button class="prow" data-n="${esc(TrainingCoach.key(x))}"><b>${esc(x.name)}</b><small>${x.muscle} · ${esc(equipmentLabel(x))}${x.compound?' · compound':''}${l?' · last '+l.sets.map(s=>s.w+'×'+s.r).slice(0,3).join(', '):''}</small></button>`}).join('')||'<div class="mu sm" style="padding:14px 0">Nothing matches. Type a name to add your own.</div>'};
  draw();$('#exQ').oninput=draw;const on=$('#exM .on');if(on&&mu)on.scrollIntoView({inline:'center',block:'nearest'});
  $('#sheet').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.mu!==undefined){mu=b.dataset.mu;return draw()}
-  let x=null;if(b.dataset.new){const n=$('#exQ').value.trim();const m=mu||'Chest';x={name:n,muscle:m,compound:false,inc:smallInc(m)?2.5:5}}else if(b.dataset.n)x=exAll().find(q=>q.name===b.dataset.n);
+  let x=null;if(b.dataset.new){const n=$('#exQ').value.trim();const m=mu||'Chest';x={name:n,muscle:m,compound:false,inc:smallInc(m)?2.5:5}}else if(b.dataset.n)x=exAll().find(q=>TrainingCoach.key(q)===b.dataset.n);
   if(x){closeSheet();onPick(x)}}}
 function exMenu(W,ei){const e=W.entries[ei];openSheet(`<h3>${esc(e.name)}</h3><div class="mu sm">${e.muscle||''}</div><div class="plist" style="max-height:none">
  <button class="prow" data-a="swap"><b>Swap exercise</b><small>Machine taken or want a different ${esc((e.muscle||'').toLowerCase())} move</small></button>
@@ -41,7 +41,7 @@ function exMenu(W,ei){const e=W.entries[ei];openSheet(`<h3>${esc(e.name)}</h3><d
   if(a==='rm'){if(e.sets.some(s=>s.done)&&!confirm('This exercise has logged sets. Remove it?'))return;W.entries.splice(ei,1)}
   const j=a==='up'?ei-1:a==='down'?ei+1:-1;if(j>=0&&j<W.entries.length)[W.entries[ei],W.entries[j]]=[W.entries[j],W.entries[ei]];
   if(W===S.active)save();closeSheet();reWorkout()}}
-function startEmpty(){S.active={id:uid(),date:Date.now(),dayId:null,dayName:'Custom workout',entries:[]};save();go('workout')}
+function startEmpty(){S.active={id:uid(),date:Date.now(),dayId:null,dayName:'Custom workout',healthContext:healthSnapshot(),entries:[]};save();go('workout')}
 
 // ===== activities (cardio, sport, anything that isn't sets × reps) =====
 // name, MET at moderate effort
@@ -110,9 +110,8 @@ function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const a
  else if(todayS.length){const s=todayS[todayS.length-1];const sm=summary(s);add('Train','var(--ac)',`${s.dayName} done`,`${sm.sets} set${sm.sets===1?'':'s'}${sm.vol?', '+fmtN(sm.vol)+' lb moved':''}. Get 30–40 g of protein in over the next couple of hours and you’ve done the job for today.`,'history')}
  else if(nd&&(isTrainDay()||behind)){const ups=nd.exercises.filter(e=>target(e).up).length;const e0=nd.exercises[0],t0=e0&&target(e0);const first=t0&&t0.last?` First up: ${e0.name}, ${t0.sets[0].w} lb × ${t0.sets[0].r}.`:'';
   const why=!isTrainDay()&&behind?' Not a scheduled day, but you need it to hit '+g.lifts+' this week.':'';
-  if(rd.lvl==='hard')add('Train','var(--good)',`Push ${nd.name} today`,`${recTxt||'You’re rested'}: go for the top of every rep range. Strain target ${strainTarget('g').join('–')}.${ups?` ${ups} lift${ups>1?'s are':' is'} due a weight jump.`:''}${first}${why}`,'home');
-  else if(rd.lvl==='normal')add('Train','var(--warn)',`${nd.name}: train as planned`,`${recTxt||'Middling readiness'}. Hit your targets, leave one rep in the tank on the big lifts.${first}${yNote}${why}`,'home');
-  else add('Train','var(--bad)',`${nd.name}, but hold back`,`${recTxt||'You’re run down'} (${rd.why.slice(1).join(', ')||'low readiness'}). Keep the weights, stop two reps short and drop the last set of the small lifts.${yNote}`,'home')}
+  const hr=trainingReadiness();add('Train',hr.level==='easy'?'var(--warn)':'var(--ac)',`${nd.name}: ${hr.label.toLowerCase()}`,`${hr.reasons.join(' ')}${ups?` ${ups} exercise${ups>1?'s have':' has'} earned a small load increase from matching past sets.`:' Match the last load and use the exercise-specific suggestion.'}${first}${yNote}`,'home')}
+
  else add('Train','var(--mu)','Rest day',`Next lift: ${nd?nd.name:'—'} ${nextTrainLabel()}. A walk toward ${fmtN(g.steps)} steps helps you recover without costing anything.${yNote}`,'home');
  // sleep
  const debt=sleepDebt(),con=consistency(),ns=sleepNights(7).filter(x=>x.hours!==null),last=lastSleep();
@@ -121,7 +120,7 @@ function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const a
  else if(ns.length>=4)add('Sleep','var(--sleep)',`Sleep is on point`,`${hm(avg(ns.map(x=>x.hours)))} a night over the last ${ns.length} tracked nights. Keep ${fmtBed(g.bed)} as the anchor.`,'sleep');
  // HRV trend
  const h7=H.days.filter(x=>x.date>addDays(t,-8)&&num(x.hrv)!==null).map(x=>x.hrv),hb=baseAt('hrv',t);
- if(h7.length>=4&&hb){const p=(avg(h7)-hb.mu)/hb.mu*100;if(p<=-8)add('Recovery','var(--bad)',`HRV is trending ${Math.abs(Math.round(p))}% under baseline`,'A week-long dip usually means sleep, stress or volume is piling up. Protect sleep and don’t add sets this week.','vitals');else if(p>=8)add('Recovery','var(--good)',`HRV is running ${Math.round(p)}% above baseline`,'Your body is absorbing the work. A good week to push the main lifts.','vitals')}
+ if(h7.length>=4&&hb){const p=(avg(h7)-hb.mu)/hb.mu*100;if(p<=-8)add('Recovery','var(--bad)',`HRV is trending ${Math.abs(Math.round(p))}% under baseline`,'A week-long dip usually means sleep, stress or volume is piling up. Protect sleep and don’t add sets this week.','vitals');else if(p>=8)add('Recovery','var(--good)',`HRV is running ${Math.round(p)}% above baseline`,'This is one recovery signal. Increase a load only when matching workout history supports it and you feel ready.','vitals')}
  // fuel
  const ft=foodTot(t),anyFood=[0,1,2,3].some(i=>foodDay(addDays(t,-i)).length),remP=Math.round(g.protein-ft.p),remK=Math.round(g.kcal-ft.k);
  if(!anyFood)add('Fuel','#ff9f0a','Start logging what you eat','Tap Log food and just say it: “chicken burrito bowl, large, with guac”. Lift estimates calories and protein so your targets mean something.','food');
@@ -277,7 +276,8 @@ function screenSheet(done){const fin=()=>{closeSheet();(done||render)()};let fou
 
 // ---- boot (kept last so every script has loaded) ----
 Object.assign(window.LIFT,{screenHTML,aiJSON,buildICS,explain,coach,actsOn,exAll,aiFood});
-render();loadHealth();Store.init({get:()=>S,adopt,onStatus});
+document.querySelectorAll('nav button').forEach(b=>b.disabled=true);$('#view').innerHTML='<div class="card mu">Restoring your saved workouts…</div>';
+Store.init({get:()=>S,cloudGet:sanitizedCloudState,adopt,onStatus}).then(()=>{storageReady=true;document.querySelectorAll('nav button').forEach(b=>b.disabled=false);render();loadHealth()});
 setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},5*60e3);
 if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').then(r=>setInterval(()=>r.update().catch(()=>{}),30*60e3)).catch(()=>{})}
 
