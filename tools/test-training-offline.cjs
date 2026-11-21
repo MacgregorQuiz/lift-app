@@ -14,9 +14,12 @@ const assert=require('node:assert/strict');
  await page.screenshot({path:'/tmp/lift-training-settings-final.png',animations:'disabled',fullPage:false});
  await context.setOffline(true);await page.reload({waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>window.LIFT?.S.plan.length==='45');
+ await page.waitForFunction(()=>HealthFeed.status().cached);
+ assert.equal(await page.evaluate(()=>HealthFeed.status().lastChecked),0);
+ assert.match(await page.locator('.health-sync-status').first().innerText(),/Using saved Health/);
  await page.click('nav [data-v="home"]');await page.click('#start');
  assert.ok(await page.evaluate(()=>LIFT.S.active.entries.length<=5));
  assert.deepEqual(errors,[]);
- console.log('PASS: service worker caches the new planner, settings persist, and workouts start offline.');
+ console.log('PASS: service worker caches all training and Health scripts, settings persist, Health fallback is labeled cached (not freshly checked), and workouts start offline.');
  }finally{await browser.close()}
 })().catch(e=>{console.error(e);process.exitCode=1});

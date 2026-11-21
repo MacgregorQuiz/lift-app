@@ -278,6 +278,6 @@ function screenSheet(done){const fin=()=>{closeSheet();(done||render)()};let fou
 Object.assign(window.LIFT,{screenHTML,aiJSON,buildICS,explain,coach,actsOn,exAll,aiFood});
 document.querySelectorAll('nav button').forEach(b=>b.disabled=true);$('#view').innerHTML='<div class="card mu">Restoring your saved workouts…</div>';
 Store.init({get:()=>S,cloudGet:sanitizedCloudState,adopt,onStatus}).then(()=>{storageReady=true;document.querySelectorAll('nav button').forEach(b=>b.disabled=false);render();loadHealth()});
-setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},5*60e3);
+setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},60e3);
 if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').then(r=>setInterval(()=>r.update().catch(()=>{}),30*60e3)).catch(()=>{})}
 

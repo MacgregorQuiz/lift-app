@@ -244,3 +244,11 @@ button:disabled{opacity:.5}
 #aiInsightResult{overflow-wrap:anywhere}
 .card .kv>span{min-width:0;overflow-wrap:anywhere}
 input[type=checkbox]{flex-shrink:0;width:20px;min-height:20px;accent-color:var(--ac)}
+/* Health export freshness is separate from checking the uploaded file. */
+.health-sync-heading{display:block;margin-top:6px;font-size:16px}
+.health-connection .kv,.sheet .health-sync-status .kv{align-items:flex-start;gap:12px}
+.health-sync-status .kv>span:last-child{text-align:right;max-width:57%;overflow-wrap:anywhere}
+.health-shortcut-label{display:flex;flex-direction:column;gap:8px;font-size:13px;margin:12px 0}
+.health-shortcut-run,.health-doc-link{display:inline-block;color:var(--ac);padding:12px;border:1px solid var(--edge);border-radius:10px;text-decoration:none;overflow-wrap:anywhere}
+.health-shortcut-run{width:100%;text-align:center;font-weight:700}
+.health-connection p{margin:8px 0}
