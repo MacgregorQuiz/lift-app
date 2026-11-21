@@ -25,7 +25,7 @@ function migrate(s){s.sessions=s.sessions||[];s.active=s.active||null;s.settings
  s.food=s.food||{};s.manual=s.manual||{};s.notes=s.notes||{};
  s.meals=s.meals||{};s.settings.eatOutCost=s.settings.eatOutCost??25;s.settings.prepCost=s.settings.prepCost??6.5;
  if(!s.habits){const d=new Date();const since=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');s.habits=defaultHabits().map(h=>({...h,since}))}
- s.hlog=s.hlog||{};s.screen=s.screen||{};if((s.v||0)<9&&!s.habits.some(h=>h.auto==='screen')){const d=new Date();s.habits.push({id:'h_screen',name:'Screen time under limit',stack:'pm',auto:'screen',since:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})}s.cues=Object.assign({am:'I wake up',day:'I sit down for lunch',pm:'I brush my teeth'},s.cues||{});s.rem=Object.assign({gym:'17:30',wake:'07:00',on:{gym:1,bed:1,am:0}},s.rem||{});s.acts=s.acts||[];s.favs=s.favs||[];if(!s.plan||!Array.isArray(s.plan.days))s.plan={tpl:'ul4',days:[1,1,0,1,1,0,0]};s.mt=s.mt||0;s.v=9;return s}
+ s.hlog=s.hlog||{};s.screen=s.screen||{};if((s.v||0)<9&&!s.habits.some(h=>h.auto==='screen')){const d=new Date();s.habits.push({id:'h_screen',name:'Screen time under limit',stack:'pm',auto:'screen',since:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})}s.cues=Object.assign({am:'I wake up',day:'I sit down for lunch',pm:'I brush my teeth'},s.cues||{});s.rem=Object.assign({gym:'17:30',wake:'07:00',on:{gym:1,bed:1,am:0}},s.rem||{});s.acts=s.acts||[];s.favs=s.favs||[];if(!s.plan||!Array.isArray(s.plan.days))s.plan={tpl:'ul4',days:[1,1,0,1,1,0,0]};s.mt=s.mt||0;s.v=10;return WorkoutPlan.migrate(s)}
 // mt = last-modified time; it decides which copy is newest when restoring or syncing
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.days){s.mt=s.mt||1;return migrate(s)}}catch(e){}return migrate({days:defaultProgram(),sessions:[],active:null,settings:{restCompound:120,restIso:90}})}
 const MEMO=new Map();function memo(k,fn){if(MEMO.has(k))return MEMO.get(k);const v=fn();MEMO.set(k,v);return v}
@@ -70,18 +70,18 @@ document.addEventListener('click',ev=>{const b=ev.target.closest('[data-go]');if
 let toastT=null;function toast(msg){let t=$('#toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t)}t.textContent=msg;clearTimeout(toastT);toastT=setTimeout(()=>t.remove(),2200)}
 
 function home(){if(S.active){view='workout';return workout()}
- $('#title').textContent='Train';$('#sub').textContent='Next up';const d=nextDay();const g=S.goals.lifts;const n=weekCount(weekStart());
+ $('#title').textContent='Train';$('#sub').textContent='Next up';const d=plannedDay(nextDay());const g=S.goals.lifts;const n=weekCount(weekStart());
  const last=sorted().slice(-1)[0];
  $('#view').innerHTML=trainSeg('home')+`<div class="card"><div class="k">Next workout</div><div class="hero">${esc(d?d.name:'—')}</div>
- <div class="mu sm">${d?d.exercises.length+' exercises':''}${last?' · last: '+esc(last.dayName)+' '+fmtD(last.date):''}</div>
- <div style="margin-top:10px">${readyPill()}</div><div style="margin-top:14px"><button class="big" id="start">Start workout</button></div>
- <div class="row wrap" style="margin-top:10px">${S.days.filter(x=>x!==d).map(x=>`<button class="pill alt" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
+ <div class="mu sm">${d?workoutEstimate(d):''}${last?' · last: '+esc(last.dayName)+' '+fmtD(last.date):''}</div>
+ ${lengthPicker()}<button class="plan-link" data-go="program">${esc(TEMPLATES[S.plan.tpl]?.name||'Custom program')} · Training settings ›</button><div style="margin-top:10px">${readyPill()}</div><div style="margin-top:14px"><button class="big" id="start">Start workout</button></div>
+ <div class="row wrap" style="margin-top:10px">${S.days.filter(x=>x.id!==d?.id).map(x=>`<button class="pill alt" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
  <div class="card"><div class="row sp"><div class="k">This week</div><span class="num"><b id="wk">${n}</b> / ${g} lifts</span></div>${weekStrip()}
  ${actsOn(ymd()).concat(S.acts.filter(a=>a.date>=weekStart()&&a.date<ymdToT(ymd()))).sort((a,b)=>b.date-a.date).map(a=>`<div class="kv"><span>${esc(a.type)} <span class="mu sm">${fmtD(a.date)}</span></span><span>${actLine(a)}</span></div>`).join('')}</div>
  <div class="row"><button id="actAdd" style="flex:1">+ Log activity</button><button id="emptyW" style="flex:1">Empty workout</button></div><div class="mu sm" style="margin:8px 2px 0">Rowing, a bike ride, hockey: log it as an activity. Or start empty and add lifts as you go.</div>
  ${d?`<div class="card"><div class="k">Targets</div>${d.exercises.map(e=>{const t=target(e);const s0=t.sets[0];return`<div class="row sp sm" style="margin-top:8px"><span>${esc(e.name)}</span><span class="${t.up?'tgt':'mu'}" style="${t.up?'color:var(--ac)':''}">${t.last?`${e.sets}×${s0.w} lb × ${s0.r}`:`${e.sets}×${e.min}-${e.max}`}${t.up?' ↑':''}</span></div>`}).join('')}</div>`:''}`;
- $('#start').onclick=()=>startWorkout(d);$('#actAdd').onclick=()=>actSheet();$('#emptyW').onclick=startEmpty;document.querySelectorAll('.alt').forEach(b=>b.onclick=()=>startWorkout(S.days.find(x=>x.id===b.dataset.id)))}
-function startWorkout(d){if(!d)return;S.active={id:uid(),date:Date.now(),dayId:d.id,dayName:d.name,entries:d.exercises.map(e=>{const t=target(e);return{exId:e.id,name:e.name,muscle:e.muscle,compound:e.compound,min:e.min,max:e.max,inc:e.inc,sets:t.sets.map(s=>({w:s.w,r:s.r,rir:'',done:false}))}})};save();go('workout')}
+ bindLengthPicker(home);$('#start').disabled=!d;$('#start').onclick=()=>startWorkout(d);$('#actAdd').onclick=()=>actSheet();$('#emptyW').onclick=startEmpty;document.querySelectorAll('.alt').forEach(b=>b.onclick=()=>startWorkout(S.days.find(x=>x.id===b.dataset.id)))}
+function startWorkout(d){if(S.active)return go('workout');d=plannedDay(d);if(!d)return;S.active={program:S.plan.tpl,length:S.plan.length,id:uid(),date:Date.now(),dayId:d.id,dayName:d.name,entries:d.exercises.map(e=>{const t=target(e);return{exId:e.id,name:e.name,muscle:e.muscle,compound:e.compound,min:e.min,max:e.max,inc:e.inc,sets:t.sets.map(s=>({w:s.w,r:s.r,rir:'',done:false}))}})};save();go('workout')}
 
 function setRow(e,i,ei){const s=e.sets[i];return`<div class="setw"><div class="delbg">Delete</div><div class="set ${s.done?'done':''}" data-e="${ei}" data-i="${i}"><span class="mu">${i+1}</span>
  <div class="stp"><button data-a="w-">−</button><input inputmode="decimal" data-f="w" value="${esc(s.w)}" placeholder="lb"><button data-a="w+">+</button></div>
@@ -164,26 +164,26 @@ function history(){$('#title').textContent='Train';$('#sub').textContent='Histor
 
 let progDay=0;
 function program(){$('#title').textContent='Train';$('#sub').textContent='Program';if(progDay>=S.days.length)progDay=0;const d=S.days[progDay];
- $('#view').innerHTML=trainSeg('program')+planHTML()+`<h2>Edit workouts</h2><div class="row wrap">${S.days.map((x,i)=>`<button class="pill dsel" data-i="${i}" style="${i===progDay?'background:var(--ac2);color:#00231a':''}">${esc(x.name)}</button>`).join('')}<button class="pill" id="addDay">+ Day</button></div>
- ${d?`<div class="card"><div class="row"><input id="dName" value="${esc(d.name)}" style="flex:1"><button data-dm="-1">◀</button><button data-dm="1">▶</button><button class="danger" id="delDay">🗑</button></div>
+ $('#view').innerHTML=trainSeg('program')+planHTML()+`<h2>Edit full routine</h2><p class="mu sm">Your full routine stays saved. Shorter sessions use the preview above; choose Full to include every exercise and set.</p><div class="row wrap">${S.days.map((x,i)=>`<button class="pill dsel" data-i="${i}" style="${i===progDay?'background:var(--ac2);color:#00231a':''}">${esc(x.name)}</button>`).join('')}<button class="pill" id="addDay">+ Day</button></div>
+ ${d?`<div class="card"><div class="row"><input id="dName" value="${esc(d.name)}" style="flex:1;min-width:0"><button data-dm="-1">◀</button><button data-dm="1">▶</button><button class="danger" id="delDay">🗑</button></div>
  ${d.exercises.map((e,i)=>`<div class="edrow" data-i="${i}"><input data-k="name" value="${esc(e.name)}"><button data-m="-1">↑</button><button data-m="1">↓</button><button class="danger" data-x="1">✕</button>
  <div class="f" style="grid-column:1/-1"><label>Sets<input data-k="sets" type="number" inputmode="numeric" value="${e.sets}"></label><label>Min reps<input data-k="min" type="number" inputmode="numeric" value="${e.min}"></label><label>Max reps<input data-k="max" type="number" inputmode="numeric" value="${e.max}"></label>
  <label>Muscle<select data-k="muscle">${MUSCLES.map(m=>`<option ${m===e.muscle?'selected':''}>${m}</option>`).join('')}</select></label><label>+lb<select data-k="inc">${[2.5,5,10].map(v=>`<option ${v==e.inc?'selected':''}>${v}</option>`).join('')}</select></label><label>Type<select data-k="compound"><option value="1" ${e.compound?'selected':''}>Compound</option><option value="0" ${!e.compound?'selected':''}>Isolation</option></select></label></div></div>`).join('')}
  <button id="addEx" style="width:100%;margin-top:10px">+ Add exercise</button></div>`:''}
  <div class="card"><b>Rest timer</b><div class="f"><label>Compound (s)<input id="rc" type="number" value="${S.settings.restCompound}"></label><label>Isolation (s)<input id="ri" type="number" value="${S.settings.restIso}"></label></div></div>
- <button class="danger" id="resetProg" style="width:100%">Reset program to default</button>`;
+ <button class="danger" id="resetProg" style="width:100%">Reset this style to default</button>`;
  const V=$('#view');
  V.querySelectorAll('.dsel').forEach(b=>b.onclick=()=>{progDay=+b.dataset.i;program()});
  $('#addDay').onclick=()=>{S.days.push({id:uid(),name:'New Day',exercises:[]});progDay=S.days.length-1;save();program()};
- $('#rc').onchange=e=>{S.settings.restCompound=+e.target.value||120;save()};$('#ri').onchange=e=>{S.settings.restIso=+e.target.value||90;save()};
- $('#resetProg').onclick=()=>{if(confirm('Reset program? Logged history is kept.')){S.days=defaultProgram();save();program()}};bindPlan();
+ $('#rc').onchange=e=>{S.settings.restCompound=Math.max(0,Math.min(600,Number(e.target.value)||0));save();program()};$('#ri').onchange=e=>{S.settings.restIso=Math.max(0,Math.min(600,Number(e.target.value)||0));save();program()};
+ $('#resetProg').onclick=()=>{if(confirm('Reset this style’s exercises and schedule? Logged history and other styles are kept.')){const t=TEMPLATES[S.plan.tpl]||TEMPLATES.ul4;S.days=t.days();S.plan.days=[...t.sched];S.goals.lifts=t.sched.filter(Boolean).length;progDay=0;save();program()}};bindPlan();
  if(!d)return;
  $('#dName').onchange=e=>{d.name=e.target.value||'Day';save();program()};
  $('#delDay').onclick=()=>{if(confirm('Delete '+d.name+'?')){S.days.splice(progDay,1);save();program()}};
  V.querySelectorAll('[data-dm]').forEach(b=>b.onclick=()=>{const j=progDay+ +b.dataset.dm;if(j<0||j>=S.days.length)return;[S.days[progDay],S.days[j]]=[S.days[j],S.days[progDay]];progDay=j;save();program()});
  $('#addEx').onclick=()=>{d.exercises.push(E('New Exercise',3,8,12,'Chest',0));save();program()};
  V.onchange=ev=>{const k=ev.target.dataset.k;if(!k)return;const e=d.exercises[ev.target.closest('.edrow').dataset.i];let v=ev.target.value;
-  if(k==='name')v=v||'Exercise';else if(k==='muscle');else if(k==='compound')v=v==='1';else v=Math.max(k==='inc'?0.5:1,+v||1);e[k]=v;if(e.min>e.max)[e.min,e.max]=[e.max,e.min];save()};
+  if(k==='name')v=v||'Exercise';else if(k==='muscle');else if(k==='compound')v=v==='1';else v=Math.max(k==='inc'?0.5:1,+v||1);e[k]=v;if(e.min>e.max)[e.min,e.max]=[e.max,e.min];save();updatePlanPreview()};
  V.onclick=ev=>{const r=ev.target.closest('.edrow');if(!r)return;const i=+r.dataset.i;
   if(ev.target.dataset.x){d.exercises.splice(i,1);save();program()}
   if(ev.target.dataset.m){const j=i+ +ev.target.dataset.m;if(j<0||j>=d.exercises.length)return;[d.exercises[i],d.exercises[j]]=[d.exercises[j],d.exercises[i]];save();program()}}}
@@ -196,7 +196,7 @@ function syncChip(){const s=Store.status();const m=!s.linked?['var(--mu)','Saved
 function onStatus(){const c=$('#syncChip');if(c)c.outerHTML=syncChip();if(view==='data'&&!$('#sheet')&&!document.activeElement.matches('input,textarea,select'))data()}
 function adopt(o,why){S=migrate(o);S.mt=S.mt||1;persist();toast(why==='cloud'?'Loaded newer data from cloud':why==='device'?'Restored your data on this device':'Restore point loaded');if(!$('#sheet')&&!document.activeElement.matches('input,textarea,select'))render()}
 function data(){$('#title').textContent='More';$('#sub').textContent='Memory & settings';const stamp=ymd();const g=S.goals;const s=Store.status();
- $('#view').innerHTML=`<h2 style="margin-top:6px">Memory</h2><div class="card"><div class="kv"><span>Saved on this device</span><span class="ok">${S.mt>1?ago(S.mt):'✓'}</span></div>
+ $('#view').innerHTML=`<h2 style="margin-top:6px">Training settings</h2><div class="card"><button class="plan-link" data-go="program">${esc(TEMPLATES[S.plan.tpl]?.name||'Custom program')} · ${WorkoutPlan.lengths[S.plan.length].name} ›</button><div class="mu sm">Switch workout styles, choose shorter sessions, and preview your plan.</div></div><h2>Memory</h2><div class="card"><div class="kv"><span>Saved on this device</span><span class="ok">${S.mt>1?ago(S.mt):'✓'}</span></div>
  <div class="kv"><span>Protected from auto-clearing</span><span>${s.persisted?'<span class="ok">Yes</span>':'Add to Home Screen'}</span></div>
  <div class="kv"><span>Stored</span><span>${S.sessions.length} workouts · ${S.acts.length} activities · ${S.body.weights.length} weigh-ins · ${Object.keys(S.hlog).length} habit days</span></div>
  <div class="k" style="margin-top:12px">Daily restore points</div><div class="row" style="margin-top:6px"><select id="snapSel" style="flex:1;min-width:0"><option>Loading…</option></select><button id="snapGo">Restore</button></div>
@@ -216,7 +216,7 @@ function data(){$('#title').textContent='More';$('#sub').textContent='Memory & s
  <button id="gSave" style="width:100%;margin-top:10px">Save goals</button><div class="mu sm" style="margin-top:6px">Gain = target lb per week. Every score, ring and habit uses these.</div></div>
  <h2>Backup files</h2><div class="card"><div class="row wrap"><button id="xj">Export JSON</button><button id="xc">Workouts CSV</button><button id="cp">Copy CSV</button><button id="xh">Habits CSV</button></div>
  <div class="k" style="margin-top:14px">Import JSON</div><div class="mu sm">Replaces all data on this device.</div><input type="file" id="imp" accept=".json,application/json" style="margin-top:8px;width:100%;padding-top:10px"></div>
- <button class="danger" id="wipe" style="width:100%;margin-top:14px">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v9</div>`;
+ <button class="danger" id="wipe" style="width:100%;margin-top:14px">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v10</div>`;
  Store.snaps().then(l=>{const sel=$('#snapSel');if(!sel||view!=='data')return;sel.innerHTML=l.length?l.map(x=>`<option value="${x.key}">${x.key==='before-restore'?'Before last restore/sync':fmtD(ymdToT(x.key))} · ${x.n} workouts</option>`).join(''):'<option value="">None yet</option>'});
  $('#snapGo').onclick=()=>{const k=$('#snapSel').value;if(!k)return;if(confirm('Replace the data on this device with this restore point? Your current data is kept as "Before last restore".'))Store.restore(k).catch(e=>alert(e.message))};
  if(s.linked){$('#syNow').onclick=()=>Store.sync();$('#syOff').onclick=()=>{if(confirm('Stop syncing? Data stays on this device and in your gist.'))Store.disconnect()}}
@@ -342,7 +342,7 @@ function stackMini(d){return STACKS.map(([k,l])=>{const hs=S.habits.filter(h=>h.
 function today(){const g=S.goals,t=ymd(),D=ovDate||autoDay();
  $('#title').textContent='Overview';$('#sub').textContent=new Date().toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'});$('#topRight').innerHTML=syncChip();
  const rec=recovery(D),sp=sleepPerf(D),stn=strain(D),sr=sleepRec(D),h=hDay(D)||{},steps=stepsFor(D);
- const n=weekCount(weekStart()),ft=foodTot(t),nd=nextDay(),ser=withMA(weightSeries()),lw=ser[ser.length-1],rate=weeklyRate(),rc=recap(),stk=streak(),m=S.manual[t]||{},ds=dayStack(t),ss=stackStreak();
+ const n=weekCount(weekStart()),ft=foodTot(t),nd=plannedDay(nextDay()),ser=withMA(weightSeries()),lw=ser[ser.length-1],rate=weeklyRate(),rc=recap(),stk=streak(),m=S.manual[t]||{},ds=dayStack(t),ss=stackStreak();
  const hsync=H.updated&&!isNaN(new Date(H.updated))?'Health synced '+ago(new Date(H.updated).getTime()):'No Health data yet';
  const vt=(l,val,unit,dl)=>`<div><div class="k">${l}</div><div class="stat">${val===null?'—':val}${val===null?'':`<small>${unit}</small>`}</div>${dl}</div>`;
  $('#view').innerHTML=`<div class="daybar"><button id="dPrev" aria-label="Previous day">‹</button><div><div class="dayname">${dayLabel(D)}</div><div class="mu sm" style="text-align:center">${new Date(ymdToT(D)).toLocaleDateString(undefined,{month:'short',day:'numeric'})} · ${hsync}</div></div><button id="dNext" aria-label="Next day" ${D>=t?'disabled':''}>›</button></div>
@@ -351,7 +351,7 @@ function today(){const g=S.goals,t=ymd(),D=ovDate||autoDay();
  ${vt('Steps',steps===null?null:fmtN(steps),'',`<span class="dlt ${steps!==null&&steps>=g.steps?'up':''}">goal ${fmtN(g.steps)}</span>`)}${vt('Active',num(h.activeKcal)===null?null:fmtN(h.activeKcal),'kcal',vsBase('activeKcal',D,num(h.activeKcal),1))}${vt('Lifts',n+'/'+g.lifts,'wk',`<span class="dlt ${stk?'up':''}">${stk?stk+'-week streak':'this week'}</span>`)}</div>
  ${coachHTML()}
  <h2>Today’s plan</h2><div class="card">${S.active?`<div class="k">In progress</div><div class="hero">${esc(S.active.dayName)}</div><button class="big" id="tStart" style="margin-top:12px">Resume workout</button>`:
-  `<div class="k">Suggested workout</div><div class="hero">${esc(nd?nd.name:'—')}</div><div class="mu sm">${nd?nd.exercises.length+' exercises · '+nd.exercises.slice(0,3).map(e=>esc(e.name)).join(', ')+'…':''}</div>
+  `<div class="k">Suggested workout</div><div class="hero">${esc(nd?nd.name:'—')}</div><div class="mu sm">${nd?workoutEstimate(nd)+' · '+nd.exercises.slice(0,3).map(e=>esc(e.name)).join(', ')+'…':''}</div>
   <div style="margin-top:10px">${readyPill()}</div><button class="big" id="tStart" style="margin-top:14px">Start ${esc(nd?nd.name:'workout')}</button>`}</div>
  <div class="card linkcard" id="tHab"><div class="row sp"><div class="k">Habit stack</div><span class="num"><b style="font:700 20px/1 var(--num)">${ds.hit}</b><span class="mu sm"> / ${ds.n} today${ss?' · '+ss+'-day streak':''}</span></span></div>${stackMini(t)}</div>
  ${fuelHTML(t)}
@@ -654,3 +654,4 @@ function vitals(){const t=ymd();$('#title').textContent='Health';$('#sub').textC
 
 document.addEventListener('click',ev=>{const b=ev.target.closest('[data-ex]');if(b){ev.stopPropagation();explain(b.dataset.ex)}},true);
 window.LIFT={habitDay,habitStats,savings,mealsCSV,habitsCSV,get S(){return S},get H(){return H},target,nextDay,stalled,e1rm,toCSV,readiness,recovery,sleepPerf,strain,hv,dayStack,stackStreak,hStreak,runLen,weekRate,impact,weightSeries,sleepRec,sleepDebt,consistency,leanFatSeries,compLatest,weeklyRate,loadHealth};
+

@@ -1,4 +1,24 @@
-/* Lift v6 — dark performance-tracker theme */
+/* Lift — dark performance-tracker theme */
+.length-picker{border:0;padding:0;margin:18px 0 10px;min-width:0}
+.length-picker legend{font-size:11px;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--mu);margin-bottom:8px}
+.length-options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.length-options button{padding:10px 2px;min-width:0}
+.length-options small,.style-option small{display:block;font-size:11px;font-weight:400;margin-top:4px;color:var(--mu)}
+.length-options .on,.style-option.on{border-color:var(--ac);background:rgba(25,227,177,.09)}
+.length-options .on b,.style-option.on b{color:var(--ac)}
+.style-options{display:grid;gap:8px;margin:14px 0}
+.style-option{text-align:left;padding:12px;display:block;width:100%}
+.style-option>span{display:block;color:var(--ac);margin-top:8px}
+.plan-link{display:block;text-align:left;background:none;border:0;padding:8px 0;color:var(--ac);width:100%}
+.plan-day{padding:12px 0;border-bottom:1px solid var(--line)}
+.plan-day:last-child{border-bottom:0;padding-bottom:0}
+.plan-day summary{cursor:pointer;min-height:44px}
+.plan-day summary>span{display:block;margin-top:4px}
+.plan-saving{margin:8px 0}
+.plan-day .kv{gap:12px}.plan-day .kv>span:last-child{white-space:nowrap}
+.plan-notice{border-left:2px solid var(--warn);padding:8px 12px;margin-top:12px;font-size:13px}
+.plan-notice button{display:block;margin-top:8px}
+button:focus-visible,summary:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
 :root{color-scheme:dark;
 --bg:#000;--bg2:#0c1013;--card:#13181c;--card2:#1d2429;--tx:#fff;--mu:#8b98a1;--line:rgba(255,255,255,.07);--edge:rgba(255,255,255,.1);--grid:rgba(255,255,255,.08);
 --glass:var(--card);--glass2:var(--card2);--hi:transparent;
@@ -214,3 +234,4 @@ button:disabled{opacity:.5}
 .tg{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line);margin-top:10px}
 .tg input{width:24px;height:24px;min-height:0;padding:0;accent-color:var(--ac);flex:none;margin-top:2px}
 .tg b{display:block;font-weight:600}.tg small{display:block;color:var(--mu);font-size:12.5px;margin-top:2px}
+
