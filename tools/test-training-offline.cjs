@@ -10,7 +10,7 @@ const assert=require('node:assert/strict');
  await page.click('nav [data-v="more"]');await page.click('[data-go="program"]');
  await page.click('[data-tpl="original4"]');
  await page.click('[data-length="full"]');
- await page.locator('.plan-day summary').first().click();
+ await page.locator('.plan-day > summary').first().click();
  await page.evaluate(()=>window.scrollTo(0,0));
  await page.screenshot({path:'/tmp/lift-training-settings-final.png',animations:'disabled',fullPage:false});
  await context.setOffline(true);await page.reload({waitUntil:'domcontentloaded'});

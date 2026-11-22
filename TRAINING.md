@@ -29,6 +29,16 @@ Pull-ups default to bodyweight; the assisted alternative appears in the cue. The
 
 Selecting this plan preserves saved routines, completed history and any active workout. The Home action explicitly selects Full. The prior Minimalist styles remain available as shortened alternatives, not the original prescription.
 
+## Per-lift targets and guidance
+
+Every workout exercise now shows its working-set count, current rep range, prescribed RIR and rest timer together. Expand **How to approach this lift** for starting-load guidance, exercise-specific setup/form cues, per-side instructions where relevant, rest adjustments and a progression rule. The same guide is available in the program preview. Existing saved routines and active sessions receive this display guidance without resetting their prescriptions or rewriting any history.
+
+The original exercise ranges remain unchanged. For example, incline dumbbell press remains 3×6–10: build clean reps at a consistent load, then consider a small increase after every working set reaches 10 with at least two reps left. This is a practical double-progression rule, not a claim that one rep range or algorithm is uniquely optimal. The existing automatic target engine retains its separate checks; viewing guidance never changes weights or fills actual RIR.
+
+Bodyweight movements use difficulty progression and assisted pull-ups use decreasing assistance, with manual adjustment. Per-side exercises explicitly label their reps. Unknown custom movements and conflicting equipment labels receive general cues rather than an invented detailed technique. The lookup is evaluated from the current exercise and equipment, so swaps and renamed exercises update the guidance. Warmup advice for bodyweight or assisted movements avoids treating assistance as resistance.
+
+**Why these rep and effort targets?** in the plan guide links to the [ACSM 2026 position stand](https://pmc.ncbi.nlm.nih.gov/articles/PMC12965823/), [proximity-to-failure review](https://pubmed.ncbi.nlm.nih.gov/38970765/), [rest-interval review](https://pmc.ncbi.nlm.nih.gov/articles/PMC11349676/) and [repetition-versus-load progression trial](https://pubmed.ncbi.nlm.nih.gov/38286426/). These support the general programming principles; the exercise cues are practical coaching guidance, not individually trial-validated prescriptions.
+
 ## Minimalist hypertrophy
 
 Choose **Minimalist Upper / Lower** for four days (Monday, Tuesday, Thursday, Saturday), or **Minimalist PPL + Upper / Lower** for five days (Monday, Tuesday, Wednesday, Friday, Saturday). PPL means Push / Pull / Legs. Both are starting routines with four exercises per session and two lower-body sessions weekly. The 45-minute selection is a budget, not a required duration or a guarantee.
@@ -80,6 +90,7 @@ Run the planner, coaching, and storage regression tests with Node:
 node tools/test-workout-plan.cjs
 node tools/test-minimalist-plan.cjs
 node tools/test-original-plan.cjs
+node tools/test-exercise-guidance.cjs
 node tools/test-training-coach.cjs
 node tools/test-store.cjs
 node tools/test-health-privacy.cjs
@@ -93,6 +104,7 @@ python -m http.server 8000 --bind 127.0.0.1
 node tools/test-training-ui.cjs
 node tools/test-minimalist-ui.cjs
 node tools/test-original-ui.cjs
+node tools/test-lift-guidance-ui.cjs
 node tools/test-training-offline.cjs
 node tools/test-coaching-ui.cjs
 ```

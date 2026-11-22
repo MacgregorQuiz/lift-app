@@ -37,7 +37,7 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('.plan-day').count(),4);
   assert.deepEqual(await page.evaluate(()=>LIFT.S.plan.days),[1,1,0,1,0,1,0],'Monday, Tuesday, Thursday, Saturday');
   const full=await compareOriginal();
-  await page.locator('.plan-day summary').last().click();
+  await page.locator('.plan-day > summary').last().click();
   await page.locator('#toast').waitFor({state:'hidden'});
   await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:'/tmp/lift-original-program.png',animations:'disabled',fullPage:true});
