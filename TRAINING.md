@@ -2,17 +2,17 @@
 
 Open **Train → Program**, or **More → Training settings**.
 
-- Choose **Original Upper-Body Focus** for the supplied four-day routine. The two shortened Minimalist plans, Upper / Lower, Push / Pull / Legs, and Full Body remain available. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
+- Choose **Upper-Body Focus · 4 Days** for the supplied four-day routine. The two shortened Minimalist plans, Upper / Lower, Push / Pull / Legs, and Full Body remain available. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
 - Choose a 30-, 45-, or 60-minute guide, or Full. The shorter options cap exercises and sets, favor distinct muscle groups, and trim later sets to approach the guide. They never rewrite the full routine.
 - Expand a day under Session preview to see exercises, working sets, rep ranges, prescribed effort, rests, and estimated duration. Estimates include a five-minute warmup, 40 seconds per set, configured rests between sets, and one minute per exercise for transitions. Equipment waits, unilateral exercises, and additional warmups may add time.
 - Edit the full routine below the preview. Changes appear in the preview immediately.
 - Changes affect the next workout. A session already in progress and completed history are preserved.
 
-Existing saves default to Full so upgrading does not silently change their routines. **Original Upper-Body Focus defaults to Full**; other newly selected styles default to 45 minutes. Returning to a style restores its saved choice. Use the session-length buttons on Train for a quick adjustment; the choice persists for that style.
+Existing saves default to Full so upgrading does not silently change their routines. **Upper-Body Focus · 4 Days defaults to Full**; other newly selected styles default to 45 minutes. Returning to a style restores its saved choice. Use the session-length buttons on Train for a quick adjustment; the choice persists for that style.
 
-## Original Upper-Body Focus
+## Upper-Body Focus · 4 Days
 
-This is the supplied routine, including all 23 exercises in their original order, with the original sets and rep ranges. It restores the upper-body work removed by the earlier four-exercise adaptation. Open **Train → Use original routine**, or select **Original Upper-Body Focus** in Program. Keep **Full** selected; choosing a shorter duration explicitly shows a warning that exercises or sets may be omitted. The stored full routine remains intact.
+This is the supplied routine, including all 23 exercises in their original order, with the original sets and rep ranges. It restores the upper-body work removed by the earlier four-exercise adaptation. Open **Train → Use Upper-Body Focus**, or select **Upper-Body Focus · 4 Days** in Program. Keep **Full** selected; choosing a shorter duration explicitly shows a warning that exercises or sets may be omitted. The stored full routine remains intact.
 
 | Day | Original exercises and working sets × reps |
 | --- | --- |

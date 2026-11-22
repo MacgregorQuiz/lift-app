@@ -30,7 +30,7 @@ test('the original source is preserved exercise-for-exercise and range-for-range
  assert.equal(days.flatMap(d=>d.exercises).length,23);
 });
 test('the supplied four-day routine starts full-length with honest per-day time guides',()=>{
- const p=plan();assert.equal(p.name,'Original Upper-Body Focus');assert.equal(p.sub,'Your supplied routine · 4 days · 5–7 exercises');
+ const p=plan();assert.equal(p.name,'Upper-Body Focus · 4 Days');assert.equal(p.sub,'Shoulders, back & upper chest · 5–7 exercises');
  assert.deepEqual(p.sched,[1,1,0,1,0,1,0]);assert.equal(p.length,'full');
  const days=p.days();for(const d of days.slice(0,3))assert.match(d.timeGuide,/40–45/);assert.match(days[3].timeGuide,/50/);
 });

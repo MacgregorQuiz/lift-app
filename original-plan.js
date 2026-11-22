@@ -22,8 +22,8 @@ const OriginalPlan = (() => {
     });
     return {
       original4: {
-        name: 'Original Upper-Body Focus',
-        sub: 'Your supplied routine · 4 days · 5–7 exercises',
+        name: 'Upper-Body Focus · 4 Days',
+        sub: 'Shoulders, back & upper chest · 5–7 exercises',
         sched: [1, 1, 0, 1, 0, 1, 0],
         length: 'full',
         guide: {
