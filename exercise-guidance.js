@@ -9,12 +9,17 @@ const ExerciseGuidance = (() => {
     {
       names: ['Incline dumbbell press','Incline DB press','Incline dumbbell chest press'],
       equipment: ['dumbbell'],
-      cues: ['Set an incline you can repeat and keep your feet planted.', 'Lower the dumbbells under control with your forearms supporting the load.', 'Press through a comfortable range and keep your selected weight-logging convention consistent.']
+      cues: ['Choose a comfortable low incline you can repeat and keep your feet planted.', 'Lower the dumbbells under control with your forearms supporting the load.', 'Press through a comfortable range and keep your selected weight-logging convention consistent.']
     },
     {
       names: ['Neutral-grip lat pulldown','Neutral grip pulldown','Neutral-grip lat pull down'],
       equipment: ['machine','cable'],
       cues: ['Adjust the thigh pad and use a comfortable palms-facing grip.', 'Draw your elbows down while keeping your torso mostly steady.', 'Control the return and use the same seat, handle, and range each time.']
+    },
+    {
+      names: ['Lat pulldown','Lat pull down','Lat pulldowns','Cable lat pulldown'],
+      equipment: ['machine','cable'],
+      cues: ['Adjust the thigh pad and choose a comfortable grip and handle.', 'Draw your elbows down while keeping your torso mostly steady.', 'Control the return and use the same seat, handle, and range each time.']
     },
     {
       names: ['Chest-supported row','Chest supported machine row','Chest supported dumbbell row','Chest supported DB row'],
@@ -34,6 +39,11 @@ const ExerciseGuidance = (() => {
     {
       names: ['Leg press'], equipment: ['machine'],
       cues: ['Set the seat and foot position so you can keep your back and pelvis supported.', 'Lower through a comfortable range without bouncing at the bottom.', 'Press smoothly and record the machine plus how you count its plates or stack.']
+    },
+    {
+      names: ['Goblet squat','Dumbbell goblet squat','DB goblet squat','Kettlebell goblet squat'],
+      equipment: ['dumbbell','kettlebell'],
+      cues: ['Hold one dumbbell or kettlebell securely at your chest and plant your feet in a comfortable stance.', 'Lower through a range you can control with your feet planted, then stand without bouncing.', 'Keep the same stance, depth, and weight-logging convention when comparing sessions.']
     },
     {
       names: ['Romanian deadlift','Barbell Romanian deadlift','DB Romanian deadlift','Dumbbell Romanian deadlift','RDL'],
@@ -59,7 +69,7 @@ const ExerciseGuidance = (() => {
     },
     {
       names: ['Incline machine chest press','Incline machine press','Machine incline chest press'], equipment: ['machine'],
-      cues: ['Adjust the seat so the handles begin in a comfortable upper-chest position.', 'Keep your torso supported as you press without bouncing out of the bottom.', 'Use the same seat setting and machine when comparing weights.']
+      cues: ['If adjustable, choose a comfortable low incline; set the seat so the handles start near your upper chest.', 'Keep your torso supported as you press without bouncing out of the bottom.', 'Use the same seat setting and machine when comparing weights.']
     },
     {
       names: ['Seated cable row','Seated cable rows'], equipment: ['cable'],

@@ -19,8 +19,30 @@ test('all 20 original movements get two or three concise cues without needing ne
  assert.equal(new Set(names).size,20);
  for(const name of names){const result=G.forExercise({name});assert.equal(result.specific,true,name);assert.ok(result.cues.length>=2&&result.cues.length<=3,name);assert.ok(result.cues.every(c=>typeof c==='string'&&c.length>0&&c.length<180));}
 });
+test('field-guide pulldowns and goblet squats get appropriate cues without imposing a grip or logging basis',()=>{
+ const pulldown={name:'Lat pulldown',equipment:'machine',basis:'unknown',variant:'Gym A',sets:3,min:6,max:10};
+ const goblet={name:'Goblet squat',equipment:'dumbbell',basis:'total',variant:'Single 40 lb dumbbell',sets:2,min:8,max:12};
+ for(const e of [pulldown,goblet]){
+  const before=structuredClone(e),result=G.forExercise(e);
+  assert.equal(result.specific,true,e.name);assert.equal(result.perSide,false);assert.equal(result.progressionKind,'load');
+  assert.equal(result.cues.length,3);assert.deepEqual(e,before);
+ }
+ assert.match(G.forExercise(pulldown).cues.join(' '),/comfortable grip and handle/);
+ assert.doesNotMatch(G.forExercise(pulldown).cues.join(' '),/palms-facing|wide.grip|narrow.grip|best|optimal/i);
+ assert.match(G.forExercise(goblet).cues.join(' '),/one dumbbell or kettlebell securely at your chest/);
+ assert.doesNotMatch(G.forExercise(goblet).cues.join(' '),/per.hand|per.side|each side|double the weight/i);
+ assert.equal(G.forExercise({name:'Goblet squat',equipment:'kettlebell'}).specific,true);
+ for(const e of [{name:'Lat pulldown',equipment:'dumbbell'},{name:'Goblet squat',equipment:'machine'}])assert.equal(G.forExercise(e).specific,false);
+});
+test('low-incline reminders remain runtime guidance and preserve saved prescriptions and setup',()=>{
+ for(const [name,equipment]of [['Incline dumbbell press','dumbbell'],['Incline machine chest press','machine']]){
+  const e={name,equipment,basis:'total',variant:'My saved setup',notes:'Bench setting 2',sets:3,min:6,max:10,rirMin:1,rirMax:3},before=structuredClone(e);
+  assert.match(G.forExercise(e).cues.join(' '),/comfortable low incline/);assert.deepEqual(e,before);
+  assert.equal(G.forExercise({...e,equipment:'barbell'}).specific,false);
+ }
+});
 test('case, hyphens, dumbbell shorthand and common aliases resolve consistently',()=>{
- const pairs=[['  INCLINE DB PRESS  ','Incline dumbbell press'],['Single–arm lat pulldown','Single-arm lat pulldown'],['DB lateral raise','Dumbbell lateral raise'],['Pullups','Pull-ups'],['RDL','Romanian deadlift'],['Rope pushdown','Triceps pushdown']];
+ const pairs=[['  INCLINE DB PRESS  ','Incline dumbbell press'],['Single–arm lat pulldown','Single-arm lat pulldown'],['DB lateral raise','Dumbbell lateral raise'],['Pullups','Pull-ups'],['RDL','Romanian deadlift'],['Rope pushdown','Triceps pushdown'],['Lat pull down','Lat pulldown'],['DB goblet squat','Goblet squat']];
  for(const [alias,canonical]of pairs)assert.deepEqual(G.forExercise({name:alias}),G.forExercise({name:canonical}));
 });
 test('explicit incompatible equipment receives safe generic cues instead of incorrect specific instructions',()=>{

@@ -54,3 +54,49 @@ test('the supplied routine defaults to Full, restores later choices, and keeps m
  assert.equal(s.plan.length,'45');
  assert.deepEqual(P.prescription({autoLoadProgression:false}),{autoLoadProgression:false});
 });
+test('optional accessory metadata is copied without inventing optional status or actual effort',()=>{
+ assert.deepEqual(P.prescription({optionalAccessory:true}),{optionalAccessory:true});
+ assert.deepEqual(P.prescription({optionalAccessory:false}),{});
+ assert.deepEqual(P.prescription({optionalAccessory:'true'}),{});
+});
+test('the core rotation continues A to B across optional C and wraps after B',()=>{
+ const days=[{id:'a',name:'Field Guide A'},{id:'b',name:'Field Guide B'},{id:'c',name:'Field Guide C',optional:true}];
+ const a={id:'session-a',dayId:'a',dayName:days[0].name,date:10},c={id:'session-c',dayId:'c',dayName:days[2].name,date:20,optional:true},b={id:'session-b',dayId:'b',dayName:days[1].name,date:30};
+ const shuffled=[b,a,c],before=structuredClone(shuffled);
+ assert.equal(P.nextDay(days,[]),days[0]);
+ assert.equal(P.nextDay(days,[a]),days[1]);
+ assert.equal(P.nextDay(days,[a,c]),days[1]);
+ assert.equal(P.nextDay(days,shuffled),days[0]);
+ assert.deepEqual(shuffled,before);
+ // Legacy optional sessions may have the day metadata but no per-session flag.
+ const oldC={...c};delete oldC.optional;assert.equal(P.nextDay(days,[a,oldC]),days[1]);
+ assert.equal(P.nextDay([],shuffled),null);
+ assert.equal(P.nextDay([days[2]],shuffled),null);
+});
+test('stable A/B names preserve rotation across fresh field2 and field3 IDs',()=>{
+ const F=require('../field-guide-plan.js');let next=0;const uid=()=>`rotation-${++next}`;
+ const E=(name,sets,min,max,muscle,compound,inc)=>({id:uid(),name,sets,min,max,muscle,compound,inc});
+ const templates=F.templates(E,uid),two=templates.field2.days(),three=templates.field3.days();
+ const a={id:'prior-a',dayId:two[0].id,dayName:two[0].name,date:10};
+ const c={id:'optional-c',dayId:three[2].id,dayName:three[2].name,date:20,optional:true};
+ assert.equal(P.nextDay(three,[a,c]),three[1]);
+ const b={id:'prior-b',dayId:three[1].id,dayName:three[1].name,date:30};
+ assert.equal(P.nextDay(two,[a,c,b]),two[0]);
+});
+test('core weekly counts exclude optional workouts while preserving all other historical logs',()=>{
+ const days=[{id:'a',name:'A'},{id:'b',name:'B'},{id:'c',name:'C',optional:true}];
+ const a={id:'a-session',dayId:'a',dayName:'A',date:10};
+ const c={id:'c-session',dayId:'c',dayName:'C',date:20};
+ assert.equal(P.requiredSessions([a,c],days).length,1);
+ const nameOnly={id:'old-c',dayId:'old-c-id',dayName:'C',date:30};
+ const marked={id:'marked',dayName:'Other optional',optional:true,date:40};
+ const unrelated={id:'legacy',dayName:'Old program day',date:50};
+ const logs=[a,c,nameOnly,marked,unrelated],before=structuredClone(logs);
+ assert.deepEqual(P.requiredSessions(logs,days),[a,unrelated]);
+ assert.deepEqual(logs,before);
+ assert.deepEqual(P.requiredSessions(logs,[]),[a,c,nameOnly,unrelated]);
+ // A known core ID wins over a coincidentally reused optional day name.
+ assert.equal(P.requiredSessions([{...a,dayName:'C'}],days).length,1);
+ // An explicit optional session never advances the rotation even if its ID matches A.
+ assert.equal(P.nextDay(days,[{...a,optional:true}]),days[0]);
+});

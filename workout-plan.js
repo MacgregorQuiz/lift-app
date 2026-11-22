@@ -22,6 +22,7 @@ const WorkoutPlan = (() => {
   function prescription(exercise) {
     const result = {};
     if (exercise.autoLoadProgression === false) result.autoLoadProgression = false;
+    if (exercise.optionalAccessory === true) result.optionalAccessory = true;
     if (exercise.restSeconds !== '' && exercise.restSeconds !== null && exercise.restSeconds !== undefined && Number.isFinite(Number(exercise.restSeconds))) result.restSeconds = restSeconds(exercise);
     if (Number.isFinite(exercise.rirMin) && Number.isFinite(exercise.rirMax) && exercise.rirMin >= 0 && exercise.rirMax >= exercise.rirMin && exercise.rirMax <= 5) {
       result.rirMin = exercise.rirMin;
@@ -29,6 +30,31 @@ const WorkoutPlan = (() => {
     }
     if (typeof exercise.cue === 'string') result.cue = exercise.cue;
     return result;
+  }
+  function sessionDay(days, session) {
+    // IDs take precedence, but a stable day name also connects saved A/B logs
+    // when switching between the two-day and two-plus-optional templates.
+    const byId = session.dayId != null && session.dayId !== ''
+      ? days.find(day => day.id === session.dayId) : null;
+    return byId || (session.dayName ? days.find(day => day.name === session.dayName) : null);
+  }
+  function requiredSessions(sessions = [], days = []) {
+    // Keep unrelated historical workouts. Only explicitly optional sessions or
+    // sessions matching a currently optional day are excluded from core goals.
+    return sessions.filter(session => session.optional !== true && sessionDay(days, session)?.optional !== true);
+  }
+  function nextDay(days = [], sessions = []) {
+    const core = days.filter(day => day.optional !== true);
+    if (!core.length) return null;
+    const ordered = requiredSessions(sessions, days)
+      .filter(session => Number.isFinite(Number(session.date)))
+      .sort((a, b) => Number(a.date) - Number(b.date));
+    for (let i = ordered.length - 1; i >= 0; i--) {
+      const matched = sessionDay(days, ordered[i]);
+      const index = core.indexOf(matched);
+      if (index >= 0) return core[(index + 1) % core.length];
+    }
+    return core[0];
   }
   function stats(day, settings) {
     const exercises = day.exercises.length;
@@ -73,6 +99,6 @@ const WorkoutPlan = (() => {
     state.goals.lifts = state.plan.days.filter(Boolean).length;
     return true;
   }
-  return {lengths, mode, migrate, restSeconds, prescription, stats, preview, switchTo};
+  return {lengths, mode, migrate, restSeconds, prescription, requiredSessions, nextDay, stats, preview, switchTo};
 })();
 if (typeof module !== 'undefined') module.exports = WorkoutPlan;

@@ -10,12 +10,17 @@ const assert=require('node:assert/strict');
   await page.route('**/health.json*',route=>route.fulfill({contentType:'application/json',body:'{"updated":null,"days":[]}'}));
   const boot=async()=>page.waitForFunction(()=>window.LIFT?.S&&!document.querySelector('nav [data-v="more"]').disabled);
   const program=async()=>{await page.click('nav [data-v="more"]');await page.click('[data-go="program"]');};
+  const selectStyle=async key=>{
+   const button=page.locator(`[data-tpl="${key}"]`);
+   if(!await button.isVisible())await page.locator('details.other-styles > summary').click();
+   await button.click();
+  };
   const captureState=()=>page.evaluate(()=>JSON.parse(JSON.stringify({days:LIFT.S.days,sessions:LIFT.S.sessions,active:LIFT.S.active})));
   const change=async(selector,value)=>{await page.locator(selector).fill(value);await page.locator(selector).press('Tab');};
   const checkWidths=async label=>{for(const width of [320,390]){await page.setViewportSize({width,height:844});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),label+' fits '+width+'px');}};
   await page.goto(process.env.LIFT_URL||'http://127.0.0.1:8000');await boot();
   assert.equal(await page.evaluate(()=>typeof ExerciseGuidance.forExercise),'function');
-  await page.click('nav [data-v="home"]');await page.locator('[data-use-original]').first().click();
+  await program();await selectStyle('original4');
   // A preexisting original plan and active session have no serialized guidance data.
   await page.evaluate(()=>{
    const s=LIFT.S,day=s.days[0];

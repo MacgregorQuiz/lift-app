@@ -2,17 +2,45 @@
 
 Open **Train → Program**, or **More → Training settings**.
 
-- Choose **Upper-Body Focus · 4 Days** for the supplied four-day routine. The two shortened Minimalist plans, Upper / Lower, Push / Pull / Legs, and Full Body remain available. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
+- Choose a **Field Guide schedule**: **Upper-Body Focus · 4 Days**, **2 Days**, or **2 + Optional**. Earlier Upper-Body Routine, the two Minimalist plans, Upper / Lower, Push / Pull / Legs, and Full Body remain under Earlier routines & other styles. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
 - Choose a 30-, 45-, or 60-minute guide, or Full. The shorter options cap exercises and sets, favor distinct muscle groups, and trim later sets to approach the guide. They never rewrite the full routine.
 - Expand a day under Session preview to see exercises, working sets, rep ranges, prescribed effort, rests, and estimated duration. Estimates include a five-minute warmup, 40 seconds per set, configured rests between sets, and one minute per exercise for transitions. Equipment waits, unilateral exercises, and additional warmups may add time.
 - Edit the full routine below the preview. Changes appear in the preview immediately.
 - Changes affect the next workout. A session already in progress and completed history are preserved.
 
-Existing saves default to Full so upgrading does not silently change their routines. **Upper-Body Focus · 4 Days defaults to Full**; other newly selected styles default to 45 minutes. Returning to a style restores its saved choice. Use the session-length buttons on Train for a quick adjustment; the choice persists for that style.
+Existing saves default to Full so upgrading does not silently change their routines. **All Field Guide profiles and Earlier Upper-Body Routine default to Full**; other newly selected styles default to 45 minutes. Returning to a style restores its saved choice. Use the session-length buttons on Train for a quick adjustment; the choice persists for that style.
 
-## Upper-Body Focus · 4 Days
+## Field Guide plans
 
-This is the supplied routine, including all 23 exercises in their original order, with the original sets and rep ranges. It restores the upper-body work removed by the earlier four-exercise adaptation. Open **Train → Use Upper-Body Focus**, or select **Upper-Body Focus · 4 Days** in Program. Keep **Full** selected; choosing a shorter duration explicitly shows a warning that exercises or sets may be omitted. The stored full routine remains intact.
+Open **Train → Use updated plan** to select the four-day update. Existing selected routines are never silently replaced. In **Program**, use the three Field Guide schedule buttons; all start at Full and preserve their own later edits when switching away and back. Nutrition goals remain unchanged.
+
+The user-provided *Looksmax Field Guide*, pages 16–18 and 35–36, is the primary programming source. Its A/B sessions are printed prescriptions; the four-day layout is a derived redistribution of A+B+C, following its advice to spread the same weekly work before adding sets. The *Clavicular Archive Transcripts* explicitly labels its automatic transcripts unverified and includes conflicting claims. Stable setups, controlled repetitions, sufficient rest and logged progression are retained where consistent with the guide and research; anecdotes do not override the program. Source files and personal details are not embedded in this public app.
+
+| Four-day default | Working sets × reps |
+| --- | --- |
+| Upper A | Incline dumbbell press 3×6–10; neutral-grip lat pulldown 3×8–12; chest-supported row 2×8–12; cable lateral raise 2×12–20; optional reverse pec deck 2×12–20 |
+| Lower A + chest / arms | Leg press 2×8–12; Romanian deadlift 2×8–10; optional incline machine chest press 2×8–12; optional preacher curl 2×10–15 |
+| Upper B | Machine chest press 3×8–12; lat pulldown 3×6–10; seated cable row 2×8–12; dumbbell lateral raise 2×12–20 |
+| Lower B + back / delts / arms | Goblet squat 2×8–12; seated leg curl 2×10–15; optional single-arm lat pulldown 2×10–15; optional cable lateral raise 2×12–20; optional triceps pushdown 2×10–15 |
+
+That is **5 / 4 / 4 / 5 exercises** and **12 / 8 / 10 / 10 sets**, or **40 sets** if all optional work is included, compared with the earlier 57-set week. C-derived work is marked optional; Exercise options → Skip today removes it only from that workout. The default schedule is Monday, Tuesday, Thursday and Saturday, and can be changed.
+
+**2 Days** uses the guide's A and B on two nonconsecutive days (default Tuesday/Saturday):
+
+- A: incline dumbbell press 3×6–10, neutral-grip lat pulldown 3×8–12, leg press 2×8–12, chest-supported row 2×8–12, cable lateral raise 2×12–20, Romanian deadlift 2×8–10.
+- B: machine chest press 3×8–12, lat pulldown 3×6–10, goblet squat 2×8–12, seated cable row 2×8–12, dumbbell lateral raise 2×12–20, seated leg curl 2×10–15.
+
+Each full session has **14 working sets**, with the guide allowing roughly 40–55 minutes. At the default rest settings, **30 min** retains exactly the first three exercises and lateral raise (**10 sets**), without modifying the saved full routine. Customized prescriptions may be further trimmed by the general time-budget algorithm.
+
+**2 + Optional** adds C: incline machine press 2×8–12, single-arm pulldown 2×10–15, cable lateral raise 2×12–20, reverse pec deck 2×12–20, optional preacher curl 2×10–15 and optional pressdown 2×10–15. It starts at the lower end of the source's allowed set ranges: 8 sets without arms, 12 with them. C is manually available on Train and never advances the A/B queue or counts toward the two-core-session goal. Its completed sets and workout remain in history. A/B day names remain stable across the two profiles so the rotation continues when switching; missed days do not reset it.
+
+Start near **2 RIR**, aiming for 1–3 clean reps left. Rest timers begin at **120 seconds for compounds and 90 for smaller lifts**, with extra rest encouraged when needed. For 3×6–10, 10/9/8 means repeat the load; every set reaching 10 with control and at least 2 RIR can justify considering a small increase. The existing automatic coach still requires its separate setup, history and recovery checks. Actual RIR is never prefilled. Set a repeatable low incline for the incline presses. Confirm unknown machine weight meanings, single-dumbbell logging and setup identifiers before comparing loads; no machine-to-dumbbell conversion is assumed.
+
+Use the first week to establish comfortable repeatable loads, then build reps over several weeks. Add optional work only when core sessions are consistent and recovery permits; reduce it temporarily with repeated poor performance and poor sleep. Protect sleep opportunity, and do not treat wearable readings as a command to lift heavier.
+
+## Earlier Upper-Body Routine
+
+This preserves the earlier supplied routine, including all 23 exercises in their original order, with the original sets and rep ranges. It restores the upper-body work removed by the earlier four-exercise adaptation. Open **Train → Program → Earlier routines & other styles → Earlier Upper-Body Routine**. Keep **Full** selected; choosing a shorter duration explicitly shows a warning that exercises or sets may be omitted. The stored full routine remains intact.
 
 | Day | Original exercises and working sets × reps |
 | --- | --- |
@@ -27,7 +55,7 @@ Start around 2 RIR, aiming for 1–3 good reps left as described in the source. 
 
 Pull-ups default to bodyweight; the assisted alternative appears in the cue. They use manual load progression even after changing equipment, because assistance is the inverse of resistance. Named assisted/counterweight movements also suppress automatic weight increases. Record assistance in notes and keep equipment setups separate. This exercise-specific restriction is not inherited when swapping to an unrelated exercise.
 
-Selecting this plan preserves saved routines, completed history and any active workout. The Home action explicitly selects Full. The prior Minimalist styles remain available as shortened alternatives, not the original prescription.
+Selecting this plan preserves saved routines, completed history and any active workout. The prior Minimalist styles remain available as shortened alternatives, not the original prescription.
 
 ## Per-lift targets and guidance
 
@@ -90,6 +118,7 @@ Run the planner, coaching, and storage regression tests with Node:
 node tools/test-workout-plan.cjs
 node tools/test-minimalist-plan.cjs
 node tools/test-original-plan.cjs
+node tools/test-field-guide-plan.cjs
 node tools/test-exercise-guidance.cjs
 node tools/test-training-coach.cjs
 node tools/test-store.cjs
@@ -104,11 +133,12 @@ python -m http.server 8000 --bind 127.0.0.1
 node tools/test-training-ui.cjs
 node tools/test-minimalist-ui.cjs
 node tools/test-original-ui.cjs
+node tools/test-field-guide-ui.cjs
 node tools/test-lift-guidance-ui.cjs
 node tools/test-training-offline.cjs
 node tools/test-coaching-ui.cjs
 ```
 
-The UI test covers legacy saves, switching all three styles, customized routine restoration, reload persistence, preview/start agreement, preserving an active workout, completion, CSV output, and layouts at 320, 390, and 768 pixels. The offline test exercises service-worker installation and starting a shortened session without a connection.
+The UI test covers legacy saves, switching all three styles, customized routine restoration, reload persistence, preview/start agreement, preserving an active workout, completion, CSV output, and layouts at 320, 390, and 768 pixels. The offline test exercises service-worker installation and starting the complete Field Guide Upper A session without a connection, including its new plan module, targets and optional accessory label.
 
 The coaching UI test covers setup conflicts and confirmation, dated notes, health snapshots, separate equipment charts, explicit AI/Health sharing, filtered cloud payloads, and recovery after losing localStorage. The storage tests exercise localStorage/IndexedDB failures, restore safeguards, unverified sync status, secret-Gist validation, and separation of credentials from backup data.

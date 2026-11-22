@@ -261,3 +261,11 @@ input[type=checkbox]{flex-shrink:0;width:20px;min-height:20px;accent-color:var(-
 .health-shortcut-run,.health-doc-link{display:inline-block;color:var(--ac);padding:12px;border:1px solid var(--edge);border-radius:10px;text-decoration:none;overflow-wrap:anywhere}
 .health-shortcut-run{width:100%;text-align:center;font-weight:700}
 .health-connection p{margin:8px 0}
+
+/* Field Guide profiles and optional work */
+.field-styles{margin:18px 0 12px}.field-frequency{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:8px}
+.field-frequency .style-option{text-align:center;padding:11px 4px;min-width:0;font-size:13px}.field-frequency small{font-size:10px}
+.other-styles>summary{cursor:pointer;min-height:44px;padding:12px 0;color:var(--mu);font-size:13px}
+.optional-accessory{display:block;color:var(--mu);font-size:11px;line-height:1.5;margin:5px 0}
+.optional-session{border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0;color:var(--ac);font-size:13px;line-height:1.5}
+.field-guide details{margin-top:14px}.field-guide details>summary{cursor:pointer;min-height:32px;font-size:13px}.field-guide p{line-height:1.6}
