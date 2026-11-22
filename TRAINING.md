@@ -2,13 +2,32 @@
 
 Open **Train → Program**, or **More → Training settings**.
 
-- Switch among the two Minimalist plans, Upper / Lower, Push / Pull / Legs, and Full Body. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
+- Choose **Original Upper-Body Focus** for the supplied four-day routine. The two shortened Minimalist plans, Upper / Lower, Push / Pull / Legs, and Full Body remain available. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
 - Choose a 30-, 45-, or 60-minute guide, or Full. The shorter options cap exercises and sets, favor distinct muscle groups, and trim later sets to approach the guide. They never rewrite the full routine.
 - Expand a day under Session preview to see exercises, working sets, rep ranges, prescribed effort, rests, and estimated duration. Estimates include a five-minute warmup, 40 seconds per set, configured rests between sets, and one minute per exercise for transitions. Equipment waits, unilateral exercises, and additional warmups may add time.
 - Edit the full routine below the preview. Changes appear in the preview immediately.
 - Changes affect the next workout. A session already in progress and completed history are preserved.
 
-Existing saves default to Full so upgrading does not silently change their routines. A newly selected style defaults to 45 minutes. Returning to a style restores its saved choice. Use the session-length buttons on Train for a quick adjustment; the choice persists for that style.
+Existing saves default to Full so upgrading does not silently change their routines. **Original Upper-Body Focus defaults to Full**; other newly selected styles default to 45 minutes. Returning to a style restores its saved choice. Use the session-length buttons on Train for a quick adjustment; the choice persists for that style.
+
+## Original Upper-Body Focus
+
+This is the supplied routine, including all 23 exercises in their original order, with the original sets and rep ranges. It restores the upper-body work removed by the earlier four-exercise adaptation. Open **Train → Use original routine**, or select **Original Upper-Body Focus** in Program. Keep **Full** selected; choosing a shorter duration explicitly shows a warning that exercises or sets may be omitted. The stored full routine remains intact.
+
+| Day | Original exercises and working sets × reps |
+| --- | --- |
+| Monday — Upper A, V-taper | Incline dumbbell press 3×6–10; neutral-grip lat pulldown 3×8–12; chest-supported row 2×8–12; cable lateral raise 3×12–20; triceps pushdown 2×10–15 |
+| Tuesday — Lower + shoulders | Leg press 3×8–12; Romanian deadlift 3×8–10; seated leg curl 2×10–15; dumbbell lateral raise 3×12–20; hanging knee raise 2×10–15 |
+| Thursday — Upper B, Width + arms | Pull-ups or assisted pull-ups 3×6–10; incline machine chest press 3×8–12; seated cable row 2×8–12; reverse pec deck 2×12–20; cable lateral raise 2×12–20; preacher curl 2×8–12 |
+| Saturday — Full body, Upper emphasis | Bulgarian split squat 3×8–12; seated leg curl 2×10–15; machine chest press 3×8–12; single-arm lat pulldown 2×10–15; cable lateral raise 3×12–20; hammer curl 2×10–15; cable crunch 2×12–20 |
+
+The days contain **5 / 5 / 6 / 7 exercises** and **13 / 13 / 14 / 17 working sets**. Side delts appear on all four days, chest and back on three days, and lower-body work on two days. The source aims for 40–45 minutes of lifting, with Saturday potentially around 50 minutes or longer. Equipment waits, unilateral movements and additional warmups may extend these guides.
+
+Start around 2 RIR, aiming for 1–3 good reps left as described in the source. Actual RIR remains blank until recorded. Rest about two minutes on compounds and 60–90 seconds on isolation exercises; accessory timers start at 90 seconds and remain editable. The automatic progression engine still requires at least two recorded RIR and its existing performance/recovery checks.
+
+Pull-ups default to bodyweight; the assisted alternative appears in the cue. They use manual load progression even after changing equipment, because assistance is the inverse of resistance. Named assisted/counterweight movements also suppress automatic weight increases. Record assistance in notes and keep equipment setups separate. This exercise-specific restriction is not inherited when swapping to an unrelated exercise.
+
+Selecting this plan preserves saved routines, completed history and any active workout. The Home action explicitly selects Full. The prior Minimalist styles remain available as shortened alternatives, not the original prescription.
 
 ## Minimalist hypertrophy
 
@@ -60,6 +79,7 @@ Run the planner, coaching, and storage regression tests with Node:
 ```sh
 node tools/test-workout-plan.cjs
 node tools/test-minimalist-plan.cjs
+node tools/test-original-plan.cjs
 node tools/test-training-coach.cjs
 node tools/test-store.cjs
 node tools/test-health-privacy.cjs
@@ -72,6 +92,7 @@ python -m http.server 8000 --bind 127.0.0.1
 # In a second terminal:
 node tools/test-training-ui.cjs
 node tools/test-minimalist-ui.cjs
+node tools/test-original-ui.cjs
 node tools/test-training-offline.cjs
 node tools/test-coaching-ui.cjs
 ```

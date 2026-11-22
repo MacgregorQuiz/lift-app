@@ -47,3 +47,10 @@ test('exercise rests drive estimates and prescription copying without filling ac
  assert.deepEqual(P.prescription({name:'Legacy',sets:3}),{});
  assert.deepEqual(P.preview(day,'45',settings),day);
 });
+test('the supplied routine defaults to Full, restores later choices, and keeps manual progression metadata',()=>{
+ const s=state(),original={length:'full',sched:[1,1,0,1,0,1,0],days:()=>[{id:'original',name:'Original',exercises:[]}]};
+ P.switchTo(s,'original4',original);assert.equal(s.plan.length,'full');
+ s.plan.length='45';P.switchTo(s,'ul4',{days:()=>[]});P.switchTo(s,'original4',original);
+ assert.equal(s.plan.length,'45');
+ assert.deepEqual(P.prescription({autoLoadProgression:false}),{autoLoadProgression:false});
+});
