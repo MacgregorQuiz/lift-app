@@ -17,6 +17,15 @@ test('manual or assisted movements never receive a resistance-style weight incre
   assert.equal(result.status,'manual');assert.equal(result.up,false);assert.deepEqual(result.sets.map(s=>s.w),[50,50,50]);
  }
 });
+test('assistance notes in the current or previous entry suppress load increases for legacy machine logs',()=>{
+ const e={...entry(),name:'Pull-ups',equipment:'machine',basis:'stack',variant:'Gym A station',inc:5};
+ for(const previousNote of ['', 'Used 50 lb assistance']){
+  const current={...e,notes:previousNote?'':'Used 50 lb assistance'};
+  const session=past({...e,notes:previousNote,sets:[1,2,3].map(()=>({w:50,r:10,rir:2,done:true}))});
+  const result=rec({entry:current,sessions:[session]});
+  assert.equal(result.status,'manual');assert.equal(result.up,false);assert.deepEqual(result.sets.map(s=>s.w),[50,50,50]);
+ }
+});
 
 test('equipment, weight basis and machine identity segregate history without mutating it',()=>{
  const db=past();const machine=past({equipment:'machine',basis:'stack',variant:'gym a'});machine.id='machine';

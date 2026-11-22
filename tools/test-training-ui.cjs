@@ -42,7 +42,7 @@ const assert=require('node:assert/strict');
  assert.match(await page.evaluate(()=>LIFT.toCSV()),/45/);
  await page.reload();assert.equal(await page.evaluate(()=>LIFT.S.sessions.length),2);
  await page.click('nav [data-v="more"]');await page.click('[data-go="program"]');
- await page.click('[data-length="45"]');await page.locator('.plan-day summary').first().click();
+ await page.click('[data-length="45"]');await page.locator('.plan-day > summary').first().click();
  for(const width of [320,390,768]){
   await page.setViewportSize({width,height:844});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`no horizontal overflow at ${width}`);
