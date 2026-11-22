@@ -126,6 +126,7 @@ const TrainingCoach = (() => {
       return {w:Number(set.w),r:Math.max(min,Math.min(max,Math.floor(Number(set.r))))};
     });
     if(noteCaution(entry.notes||entry.note)||noteCaution(last.notes)) return make(sets,'A workout note mentions pain, difficulty, or a failed set. Do not increase automatically; check the note and how you feel.','caution');
+    if(entry.autoLoadProgression===false||/\b(assisted|assistance|counterweight)\b/i.test(`${entry.name||''} ${entry.variant||''}`))return make(sets,'Adjust this exercise manually. For assisted pull-ups, more assistance makes the movement easier; no automatic weight increase is suggested.','manual');
     const eq=equipment(entry);
     if(eq.equipment==='unknown'||eq.basis==='unknown')return make(sets,'Confirm the equipment and weight basis before increasing from this history.','equipment-review');
     if((eq.equipment==='machine'||eq.equipment==='cable')&&!eq.variant)return make(sets,'Name this machine or cable setup before progressing; stack weights vary between machines.','equipment-review');

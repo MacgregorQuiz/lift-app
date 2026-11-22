@@ -21,6 +21,7 @@ const WorkoutPlan = (() => {
   }
   function prescription(exercise) {
     const result = {};
+    if (exercise.autoLoadProgression === false) result.autoLoadProgression = false;
     if (exercise.restSeconds !== '' && exercise.restSeconds !== null && exercise.restSeconds !== undefined && Number.isFinite(Number(exercise.restSeconds))) result.restSeconds = restSeconds(exercise);
     if (Number.isFinite(exercise.rirMin) && Number.isFinite(exercise.rirMax) && exercise.rirMin >= 0 && exercise.rirMax >= exercise.rirMin && exercise.rirMax <= 5) {
       result.rirMin = exercise.rirMin;
@@ -68,7 +69,7 @@ const WorkoutPlan = (() => {
     state.programs[state.plan.tpl] = copy({days: state.days, plan: state.plan});
     const saved = Object.hasOwn(state.programs, key) ? state.programs[key] : null;
     state.days = saved ? copy(saved.days) : template.days();
-    state.plan = saved ? copy(saved.plan) : {tpl: key, days: [...template.sched], length: '45'};
+    state.plan = saved ? copy(saved.plan) : {tpl: key, days: [...template.sched], length: mode(template.length || '45')};
     state.goals.lifts = state.plan.days.filter(Boolean).length;
     return true;
   }

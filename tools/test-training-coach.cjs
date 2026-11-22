@@ -9,6 +9,15 @@ const past=(options={})=>({id:'past',date:now-86400000,entries:[{...entry(),plan
 const rec=(options={})=>C.recommend({entry:entry(),sessions:[past()],health:ready,now,...options});
 const health=()=>({updated:new Date(now-3600000).toISOString(),today,now,sleepGoal:8,days:[...Array.from({length:7},(_,i)=>({date:`2026-11-${14+i}`,hrv:60,restingHR:55,sleepHours:8})),{date:today,hrv:62,restingHR:54,sleepHours:8.1}]});
 
+test('manual or assisted movements never receive a resistance-style weight increase',()=>{
+ for(const changes of [{name:'Pull-ups',autoLoadProgression:false},{name:'Assisted Pull-ups'},{name:'Pull-ups',variant:'assistance station'}]){
+  const e={...entry(),equipment:'machine',basis:'stack',variant:'station',inc:5,...changes};
+  const session=past({...e,sets:[1,2,3].map(()=>({w:50,r:10,rir:2,done:true}))});
+  const result=rec({entry:e,sessions:[session]});
+  assert.equal(result.status,'manual');assert.equal(result.up,false);assert.deepEqual(result.sets.map(s=>s.w),[50,50,50]);
+ }
+});
+
 test('equipment, weight basis and machine identity segregate history without mutating it',()=>{
  const db=past();const machine=past({equipment:'machine',basis:'stack',variant:'gym a'});machine.id='machine';
  const original=structuredClone([db,machine]);

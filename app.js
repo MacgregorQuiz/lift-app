@@ -26,7 +26,7 @@ function migrate(s){s.sessions=s.sessions||[];s.active=s.active||null;s.settings
  s.food=s.food||{};s.manual=s.manual||{};s.notes=s.notes||{};
  s.meals=s.meals||{};s.settings.eatOutCost=s.settings.eatOutCost??25;s.settings.prepCost=s.settings.prepCost??6.5;
  if(!s.habits){const d=new Date();const since=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');s.habits=defaultHabits().map(h=>({...h,since}))}
- s.hlog=s.hlog||{};s.screen=s.screen||{};if((s.v||0)<9&&!s.habits.some(h=>h.auto==='screen')){const d=new Date();s.habits.push({id:'h_screen',name:'Screen time under limit',stack:'pm',auto:'screen',since:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})}s.cues=Object.assign({am:'I wake up',day:'I sit down for lunch',pm:'I brush my teeth'},s.cues||{});s.rem=Object.assign({gym:'17:30',wake:'07:00',on:{gym:1,bed:1,am:0}},s.rem||{});s.acts=s.acts||[];s.favs=s.favs||[];if(!s.plan||!Array.isArray(s.plan.days))s.plan={tpl:'ul4',days:[1,1,0,1,1,0,0]};s.mt=s.mt||0;s.v=13;s.healthArchive=s.healthArchive||{updated:null,days:[]};s.settings.syncHealth=s.settings.syncHealth===true;return WorkoutPlan.migrate(s)}
+ s.hlog=s.hlog||{};s.screen=s.screen||{};if((s.v||0)<9&&!s.habits.some(h=>h.auto==='screen')){const d=new Date();s.habits.push({id:'h_screen',name:'Screen time under limit',stack:'pm',auto:'screen',since:d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')})}s.cues=Object.assign({am:'I wake up',day:'I sit down for lunch',pm:'I brush my teeth'},s.cues||{});s.rem=Object.assign({gym:'17:30',wake:'07:00',on:{gym:1,bed:1,am:0}},s.rem||{});s.acts=s.acts||[];s.favs=s.favs||[];if(!s.plan||!Array.isArray(s.plan.days))s.plan={tpl:'ul4',days:[1,1,0,1,1,0,0]};s.mt=s.mt||0;s.v=14;s.healthArchive=s.healthArchive||{updated:null,days:[]};s.settings.syncHealth=s.settings.syncHealth===true;return WorkoutPlan.migrate(s)}
 // mt = last-modified time; it decides which copy is newest when restoring or syncing
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.days){s.mt=s.mt||1;return migrate(s)}}catch(e){}return migrate({days:defaultProgram(),sessions:[],active:null,settings:{restCompound:120,restIso:90}})}
 const MEMO=new Map();function memo(k,fn){if(MEMO.has(k))return MEMO.get(k);const v=fn();MEMO.set(k,v);return v}
@@ -66,7 +66,7 @@ let toastT=null;function toast(msg){let t=$('#toast');if(!t){t=document.createEl
 function home(){if(S.active){view='workout';return workout()}
  $('#title').textContent='Train';$('#sub').textContent='Next up';const d=plannedDay(nextDay());const g=S.goals.lifts;const n=weekCount(weekStart());
  const last=sorted().slice(-1)[0];
- $('#view').innerHTML=trainSeg('home')+`<div class="card"><div class="k">Next workout</div><div class="hero">${esc(d?d.name:'—')}</div>
+ $('#view').innerHTML=trainSeg('home')+originalPlanPrompt()+`<div class="card"><div class="k">Next workout</div><div class="hero">${esc(d?d.name:'—')}</div>
  <div class="mu sm">${d?workoutEstimate(d):''}${last?' · last: '+esc(last.dayName)+' '+fmtD(last.date):''}</div>
  ${lengthPicker()}<button class="plan-link" data-go="program">${esc(TEMPLATES[S.plan.tpl]?.name||'Custom program')} · Training settings ›</button><div style="margin-top:10px">${readyPill()}</div><div style="margin-top:14px"><button class="big" id="start">Start workout</button></div>
  <div class="row wrap" style="margin-top:10px">${S.days.filter(x=>x.id!==d?.id).map(x=>`<button class="pill alt" data-id="${x.id}">${esc(x.name)}</button>`).join('')}</div></div>
@@ -170,7 +170,7 @@ function program(){$('#title').textContent='Train';$('#sub').textContent='Progra
  V.querySelectorAll('.dsel').forEach(b=>b.onclick=()=>{progDay=+b.dataset.i;program()});
  $('#addDay').onclick=()=>{S.days.push({id:uid(),name:'New Day',exercises:[]});progDay=S.days.length-1;save();program()};
  $('#rc').onchange=e=>{S.settings.restCompound=Math.max(0,Math.min(600,Number(e.target.value)||0));save();program()};$('#ri').onchange=e=>{S.settings.restIso=Math.max(0,Math.min(600,Number(e.target.value)||0));save();program()};
- $('#resetProg').onclick=()=>{if(confirm('Reset this style’s exercises and schedule? Logged history and other styles are kept.')){const t=TEMPLATES[S.plan.tpl]||TEMPLATES.ul4;S.days=t.days();S.plan.days=[...t.sched];S.goals.lifts=t.sched.filter(Boolean).length;progDay=0;save();program()}};bindPlan();
+ $('#resetProg').onclick=()=>{if(confirm('Reset this style’s exercises and schedule? Logged history and other styles are kept.')){const t=TEMPLATES[S.plan.tpl]||TEMPLATES.ul4;S.days=t.days();S.plan.days=[...t.sched];if(t.length)S.plan.length=WorkoutPlan.mode(t.length);S.goals.lifts=t.sched.filter(Boolean).length;progDay=0;save();program()}};bindPlan();
  if(!d)return;
  $('#dName').onchange=e=>{d.name=e.target.value||'Day';save();program()};
  $('#delDay').onclick=()=>{if(confirm('Delete '+d.name+'?')){S.days.splice(progDay,1);save();program()}};
@@ -211,7 +211,7 @@ function data(){$('#title').textContent='More';$('#sub').textContent='Memory & s
  <button id="gSave" style="width:100%;margin-top:10px">Save goals</button><div class="mu sm" style="margin-top:6px">Gain = target lb per week. Every score, ring and habit uses these.</div></div>
  <h2>Backup files</h2><div class="card"><div class="row wrap"><button id="xj">Export JSON</button><button id="xc">Workouts CSV</button><button id="cp">Copy CSV</button><button id="xh">Habits CSV</button></div>
  <div class="k" style="margin-top:14px">Import JSON</div><div class="mu sm">Replaces all data on this device.</div><input type="file" id="imp" accept=".json,application/json" style="margin-top:8px;width:100%;padding-top:10px"></div>
- <button class="danger" id="wipe" style="width:100%;margin-top:14px">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v13</div>`;
+ <button class="danger" id="wipe" style="width:100%;margin-top:14px">Erase all workouts</button><div class="mu sm" style="margin-top:14px;text-align:center">Lift v14</div>`;
  Store.snaps().then(l=>{const sel=$('#snapSel');if(!sel||view!=='data')return;sel.innerHTML=l.length?l.map(x=>`<option value="${x.key}">${x.key==='before-restore'?'Before last restore/sync':fmtD(ymdToT(x.key))} · ${x.n} workouts</option>`).join(''):'<option value="">None yet</option>'});
  $('#snapGo').onclick=()=>{const k=$('#snapSel').value;if(!k)return;if(confirm('Replace the data on this device with this restore point? Your current data is kept as "Before last restore".'))Store.restore(k).catch(e=>alert(e.message))};
  if(s.linked){$('#syNow').onclick=()=>Store.sync();$('#syOff').onclick=()=>{if(confirm('Stop syncing? Data stays on this device and in your gist.'))Store.disconnect()}}
