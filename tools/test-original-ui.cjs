@@ -11,6 +11,11 @@ const assert=require('node:assert/strict');
   await page.route('**/health.json*',route=>route.fulfill({contentType:'application/json',body:'{"updated":null,"days":[]}'}));
   const boot=async()=>page.waitForFunction(()=>window.LIFT?.S&&!document.querySelector('nav [data-v="more"]').disabled);
   const program=async()=>{await page.click('nav [data-v="more"]');await page.click('[data-go="program"]');};
+  const selectStyle=async key=>{
+   const button=page.locator(`[data-tpl="${key}"]`);
+   if(!await button.isVisible())await page.locator('details.other-styles > summary').click();
+   await button.click();
+  };
   const change=async(selector,value)=>{await page.locator(selector).fill(value);await page.locator(selector).press('Tab');};
   const compareOriginal=async()=>{
    const days=await page.evaluate(()=>LIFT.S.days.map(day=>WorkoutPlan.preview(day,LIFT.S.plan.length,LIFT.S.settings)));
@@ -26,12 +31,11 @@ const assert=require('node:assert/strict');
   });
   const history=await page.evaluate(()=>JSON.parse(JSON.stringify(LIFT.S.sessions)));
   // Preserve an already customized minimalist routine when correcting the plan.
-  await program();await page.click('[data-tpl="minimalist4"]');
+  await program();await selectStyle('minimalist4');
   await page.click('[data-length="30"]');await change('#dName','My earlier minimalist day');await page.click('[data-pd="6"]');
   const minimalist=await page.evaluate(()=>JSON.parse(JSON.stringify({days:LIFT.S.days,plan:LIFT.S.plan})));
-  await page.click('nav [data-v="home"]');
-  await page.locator('[data-use-original]').first().click();
-  assert.equal(await page.evaluate(()=>LIFT.S.plan.tpl),'original4','home action selects the original plan');
+  await program();await selectStyle('original4');
+  assert.equal(await page.evaluate(()=>LIFT.S.plan.tpl),'original4','earlier-style selector restores the original plan');
   assert.equal(await page.evaluate(()=>LIFT.S.plan.length),'full','first selection preserves the complete source routine');
   await program();assert.equal(await page.getAttribute('[data-length="full"]','aria-pressed'),'true');
   assert.equal(await page.locator('.plan-day').count(),4);
@@ -63,9 +67,9 @@ const assert=require('node:assert/strict');
   assert.equal(await page.locator('#originalLengthWarning').isVisible(),false,'Full clears the shortening warning');
   await compareOriginal();
   await page.reload();await boot();assert.equal(await page.evaluate(()=>LIFT.S.plan.length),'full','Full persists across reload');
-  await program();await page.click('[data-tpl="minimalist4"]');
+  await program();await selectStyle('minimalist4');
   assert.deepEqual(await page.evaluate(()=>({days:LIFT.S.days,plan:LIFT.S.plan})),minimalist,'previous minimalist edits and schedule survive');
-  await page.click('[data-tpl="original4"]');await compareOriginal();
+  await selectStyle('original4');await compareOriginal();
   assert.equal(await page.evaluate(()=>LIFT.S.plan.length),'full','returning to original restores Full');
   const saturdayId=await page.evaluate(()=>LIFT.S.days[3].id);
   await page.click('nav [data-v="home"]');
@@ -85,7 +89,7 @@ const assert=require('node:assert/strict');
   }
   await change('[data-f="w"] >> nth=0','40');await change('[data-f="r"] >> nth=0','8');await page.locator('[data-a="chk"]').first().click();
   const active=await page.evaluate(()=>JSON.parse(JSON.stringify(LIFT.S.active)));
-  await program();await page.click('[data-tpl="minimalist4"]');
+  await program();await selectStyle('minimalist4');
   assert.deepEqual(await page.evaluate(()=>LIFT.S.active),active,'switching back does not truncate the active original session');
   assert.deepEqual(await page.evaluate(()=>LIFT.S.sessions),history);
   await page.reload();await boot();assert.deepEqual(await page.evaluate(()=>LIFT.S.active),active,'active original session survives reload');
@@ -95,6 +99,6 @@ const assert=require('node:assert/strict');
   assert.equal(completed[1].entries[0].rirMin,1);assert.equal(completed[1].entries[0].rirMax,3);assert.equal(completed[1].entries[0].sets[0].rir,'');
   await page.reload();await boot();assert.deepEqual(await page.evaluate(()=>LIFT.S.sessions),completed);assert.equal(await page.evaluate(()=>LIFT.S.active),null);
   assert.deepEqual(errors,[]);
-  console.log('PASS: home original-plan action, exact source totals/schedule, explicit shortening warning, Full restoration/reload, minimalist customization retention, complete seven-exercise Saturday, RIR/rest metadata, active/history preservation, and 320/390px layouts.');
+  console.log('PASS: earlier original-plan selector, exact source totals/schedule, explicit shortening warning, Full restoration/reload, minimalist customization retention, complete seven-exercise Saturday, RIR/rest metadata, active/history preservation, and 320/390px layouts.');
  }finally{await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1;});
