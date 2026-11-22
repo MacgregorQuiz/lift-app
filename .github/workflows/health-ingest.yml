@@ -13,6 +13,7 @@ on:
         default: '{}'
 permissions:
   contents: write
+  pages: write
 concurrency:
   group: health-ingest
   cancel-in-progress: false
@@ -26,10 +27,22 @@ jobs:
           PAYLOAD: ${{ github.event_name == 'workflow_dispatch' && inputs.payload || toJson(github.event.client_payload) }}
         run: node tools/merge-health.mjs health.json
       - name: Commit
+        id: commit
         run: |
           git config user.name "HealthBOT"
           git config user.email "healthbot@users.noreply.github.com"
           git add health.json
           git diff --cached --quiet && exit 0
           git commit -m "Health sync $(date -u +%Y-%m-%dT%H:%MZ)"
-          git pull --rebase --autostash origin "${GITHUB_REF_NAME}" && git push
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      # GITHUB_TOKEN pushes do not trigger Pages builds. Request one explicitly
+      # for the existing branch-based site after the new data reaches main.
+      # https://docs.github.com/en/rest/pages/pages#request-a-github-pages-build
+      - name: Publish updated Health feed
+        if: steps.commit.outputs.changed == 'true' && github.ref_name == github.event.repository.default_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/${GITHUB_REPOSITORY}/pages/builds" --jq '.status'
+

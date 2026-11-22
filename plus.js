@@ -18,30 +18,33 @@ const EXLIB=[['Bench Press','Chest',1],['Incline Bench Press','Chest',1],['Incli
  ['Cable Crunch','Abs',0],['Hanging Leg Raise','Abs',0],['Plank','Abs',0],['Ab Wheel','Abs',0],['Russian Twist','Abs',0],['Pallof Press','Abs',0],['Farmer Carry','Abs',1]];
 const smallInc=m=>['Shoulders','Biceps','Triceps'].includes(m);
 // library + anything you've ever logged or programmed
-function exAll(){const m=new Map();for(const[n,mu,c]of EXLIB)m.set(norm(n),{name:n,muscle:mu,compound:!!c,inc:!c&&smallInc(mu)?2.5:5});
- for(const d of S.days)for(const e of d.exercises)m.set(norm(e.name),{name:e.name,muscle:e.muscle,compound:!!e.compound,inc:e.inc||5,sets:e.sets,min:e.min,max:e.max,mine:1});
- for(const s of S.sessions)for(const e of s.entries)if(!m.has(norm(e.name)))m.set(norm(e.name),{name:e.name,muscle:e.muscle||'Chest',compound:!!e.compound,inc:e.inc||5,mine:1});return[...m.values()]}
-function mkEntry(x,W){const ex={name:x.name,sets:x.sets||3,min:x.min||(x.compound?6:10),max:x.max||(x.compound?10:15),inc:x.inc||5};const t=target(ex,W.id);
- return{exId:uid(),name:x.name,muscle:x.muscle,compound:!!x.compound,min:ex.min,max:ex.max,inc:ex.inc,sets:t.sets.map(s=>({w:s.w,r:s.r,rir:'',done:false}))}}
+function exAll(){const m=new Map();for(const[n,mu,c]of EXLIB){const e={name:n,muscle:mu,compound:!!c,inc:!c&&smallInc(mu)?2.5:5};m.set(TrainingCoach.key(e),e)}
+ for(const d of S.days)for(const e of d.exercises)m.set(TrainingCoach.key(e),{...e,mine:1});
+ for(const s of S.sessions)for(const e of s.entries)if(!m.has(TrainingCoach.key(e)))m.set(TrainingCoach.key(e),{...e,sets:e.plannedSetCount||e.sets.length||3,mine:1});return[...m.values()]}
+function mkEntry(x,W,previous){const minimalist=W.program?.startsWith('minimalist'),inherited=previous?WorkoutPlan.prescription(previous):{};delete inherited.cue;
+ if(previous&&!!previous.compound!==!!x.compound)delete inherited.restSeconds;
+ const prescription={...(minimalist?{rirMin:1,rirMax:2,restSeconds:x.compound?120:90}:{}),...inherited,...WorkoutPlan.prescription(x)};
+ const ex={...x,sets:previous?.sets.length||x.sets||3,min:x.min||(x.compound?6:10),max:x.max||(minimalist?(x.compound?12:20):(x.compound?10:15)),inc:x.inc||5};const t=target(ex,W.id);
+ return{...TrainingCoach.equipment(x),...prescription,notes:'',plannedSetCount:t.sets.length,exId:uid(),name:x.name,muscle:x.muscle,compound:!!x.compound,min:ex.min,max:ex.max,inc:ex.inc,sets:t.sets.map(s=>({w:s.w,r:s.r,rir:'',done:false}))}}
 function exPicker(title,onPick,muscle){let mu=muscle||'';openSheet(`<h3>${esc(title)}</h3><input id="exQ" placeholder="Search exercises" autocomplete="off" style="width:100%;margin-top:10px"><div class="chips" id="exM"></div><div id="exL" class="plist"></div>`);
  const draw=()=>{const q=norm($('#exQ').value);$('#exM').innerHTML=['',...MUSCLES].map(m=>`<button class="pill ${m===mu?'on':''}" data-mu="${m}">${m||'All'}</button>`).join('');
   const all=exAll();const L=all.filter(x=>(!mu||x.muscle===mu)&&(!q||norm(x.name).includes(q))).sort((a,b)=>(b.mine||0)-(a.mine||0)||a.name.localeCompare(b.name));
   const exact=all.some(x=>norm(x.name)===q);
-  $('#exL').innerHTML=(q&&!exact?`<button class="prow" data-new="1"><b>Add “${esc($('#exQ').value.trim())}”</b><small>New ${mu||'Chest'} exercise · pick a muscle above first</small></button>`:'')+L.slice(0,60).map(x=>{const h=hist(x.name);const l=h[h.length-1];return`<button class="prow" data-n="${esc(x.name)}"><b>${esc(x.name)}</b><small>${x.muscle}${x.compound?' · compound':''}${l?' · last '+l.sets.map(s=>s.w+'×'+s.r).slice(0,3).join(', '):''}</small></button>`}).join('')||'<div class="mu sm" style="padding:14px 0">Nothing matches. Type a name to add your own.</div>'};
+  $('#exL').innerHTML=(q&&!exact?`<button class="prow" data-new="1"><b>Add “${esc($('#exQ').value.trim())}”</b><small>New ${mu||'Chest'} exercise · pick a muscle above first</small></button>`:'')+L.slice(0,60).map(x=>{const h=hist(x);const l=h[h.length-1];return`<button class="prow" data-n="${esc(TrainingCoach.key(x))}"><b>${esc(x.name)}</b><small>${x.muscle} · ${esc(equipmentLabel(x))}${x.compound?' · compound':''}${l?' · last '+l.sets.map(s=>s.w+'×'+s.r).slice(0,3).join(', '):''}</small></button>`}).join('')||'<div class="mu sm" style="padding:14px 0">Nothing matches. Type a name to add your own.</div>'};
  draw();$('#exQ').oninput=draw;const on=$('#exM .on');if(on&&mu)on.scrollIntoView({inline:'center',block:'nearest'});
  $('#sheet').onclick=ev=>{const b=ev.target.closest('button');if(!b)return;if(b.dataset.mu!==undefined){mu=b.dataset.mu;return draw()}
-  let x=null;if(b.dataset.new){const n=$('#exQ').value.trim();const m=mu||'Chest';x={name:n,muscle:m,compound:false,inc:smallInc(m)?2.5:5}}else if(b.dataset.n)x=exAll().find(q=>q.name===b.dataset.n);
+  let x=null;if(b.dataset.new){const n=$('#exQ').value.trim();const m=mu||'Chest';x={name:n,muscle:m,compound:false,inc:smallInc(m)?2.5:5}}else if(b.dataset.n)x=exAll().find(q=>TrainingCoach.key(q)===b.dataset.n);
   if(x){closeSheet();onPick(x)}}}
 function exMenu(W,ei){const e=W.entries[ei];openSheet(`<h3>${esc(e.name)}</h3><div class="mu sm">${e.muscle||''}</div><div class="plist" style="max-height:none">
  <button class="prow" data-a="swap"><b>Swap exercise</b><small>Machine taken or want a different ${esc((e.muscle||'').toLowerCase())} move</small></button>
  <button class="prow" data-a="up"><b>Move up</b><small>Do it earlier</small></button><button class="prow" data-a="down"><b>Move down</b><small>Do it later</small></button>
  <button class="prow" data-a="rm"><b style="color:var(--bad)">Skip today</b><small>Remove from this workout only; your program is unchanged</small></button></div>`);
  $('#sheet').onclick=ev=>{const b=ev.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
-  if(a==='swap')return exPicker('Swap '+e.name,x=>{W.entries[ei]=mkEntry(x,W);if(W===S.active)save();reWorkout()},e.muscle);
+  if(a==='swap')return exPicker('Swap '+e.name,x=>{W.entries[ei]=mkEntry(x,W,e);if(W===S.active)save();reWorkout()},e.muscle);
   if(a==='rm'){if(e.sets.some(s=>s.done)&&!confirm('This exercise has logged sets. Remove it?'))return;W.entries.splice(ei,1)}
   const j=a==='up'?ei-1:a==='down'?ei+1:-1;if(j>=0&&j<W.entries.length)[W.entries[ei],W.entries[j]]=[W.entries[j],W.entries[ei]];
   if(W===S.active)save();closeSheet();reWorkout()}}
-function startEmpty(){S.active={id:uid(),date:Date.now(),dayId:null,dayName:'Custom workout',entries:[]};save();go('workout')}
+function startEmpty(){S.active={id:uid(),date:Date.now(),dayId:null,dayName:'Custom workout',healthContext:healthSnapshot(),entries:[]};save();go('workout')}
 
 // ===== activities (cardio, sport, anything that isn't sets × reps) =====
 // name, MET at moderate effort
@@ -74,6 +77,7 @@ function weekStrip(){const ws=ymd(weekStart()),t=ymd();return`<div class="wk">${
 const isTrainDay=(d=ymd())=>!!S.plan.days[(new Date(ymdToT(d)).getDay()+6)%7];
 function nextTrainLabel(){const t=ymd();for(let i=1;i<=7;i++){const d=addDays(t,i);if(isTrainDay(d))return i===1?'tomorrow':new Date(ymdToT(d)).toLocaleDateString(undefined,{weekday:'long'})}return'when you’re ready'}
 const TEMPLATES={
+ ...MinimalistPlan.templates(E,uid),
  ul4:{name:'Upper / Lower',sub:'4 days · balanced size and strength',sched:[1,1,0,1,1,0,0],days:()=>defaultProgram()},
  ppl3:{name:'Push / Pull / Legs',sub:'3 days · more work per session',sched:[1,0,1,0,1,0,0],days:()=>[
   {id:uid(),name:'Push',exercises:[E('Incline DB Press',4,6,10,'Chest',1),E('Machine Chest Press',3,8,12,'Chest',1),E('Seated DB Shoulder Press',3,8,10,'Shoulders',1),E('Lateral Raise',4,12,20,'Shoulders',0,2.5),E('Cable Fly',3,12,15,'Chest',0),E('Rope Pushdown',3,10,15,'Triceps',0,2.5),E('Overhead Triceps Extension',3,10,15,'Triceps',0,2.5)]},
@@ -83,15 +87,29 @@ const TEMPLATES={
   {id:uid(),name:'Full Body A',exercises:[E('Back Squat',3,6,10,'Quads',1),E('Incline DB Press',3,6,10,'Chest',1),E('Chest-Supported Row',3,8,12,'Back',1),E('Leg Curl',3,10,15,'Hamstrings',0),E('Lateral Raise',3,12,20,'Shoulders',0,2.5),E('Rope Pushdown',2,10,15,'Triceps',0,2.5)]},
   {id:uid(),name:'Full Body B',exercises:[E('Romanian Deadlift',3,8,10,'Hamstrings',1),E('Seated DB Shoulder Press',3,8,10,'Shoulders',1),E('Pull-ups',3,6,12,'Back',1),E('Leg Press',3,10,15,'Quads',1),E('Cable Fly',3,12,15,'Chest',0),E('Incline DB Curl',2,10,15,'Biceps',0,2.5)]},
   {id:uid(),name:'Full Body C',exercises:[E('Hip Thrust',3,8,12,'Glutes',1),E('Flat DB Press',3,8,12,'Chest',1),E('Lat Pulldown',3,8,12,'Back',1),E('Walking Lunge',3,10,12,'Quads',1),E('Face Pull',3,15,20,'Shoulders',0),E('Cable Crunch',3,12,15,'Abs',0)]}]}};
-function planHTML(){return`<div class="card"><div class="k">Training days</div><div class="wk" style="margin-top:10px">${WD.map((l,i)=>`<button class="wdb ${S.plan.days[i]?'on':''}" data-pd="${i}">${l}</button>`).join('')}</div><div class="mu sm" style="margin-top:8px">${S.plan.days.filter(Boolean).length} lifting days a week. Workouts rotate in order, so a missed day just moves to the next one.</div></div>
- <div class="card"><div class="k">Switch program</div><div class="plist" style="max-height:none;margin-top:4px">${Object.entries(TEMPLATES).map(([k,t])=>`<button class="prow" data-tpl="${k}"><b>${t.name}${S.plan.tpl===k?' <span class="badge">current</span>':''}</b><small>${t.sub}</small></button>`).join('')}</div><div class="mu sm">Your logged history and progression carry over to any exercise with the same name.</div></div>`}
-function bindPlan(){document.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pd;S.plan.days[i]=S.plan.days[i]?0:1;if(!S.plan.days.some(Boolean))S.plan.days[i]=1;S.goals.lifts=S.plan.days.filter(Boolean).length;save();const y=window.scrollY;program();window.scrollTo(0,y)});
- document.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{const t=TEMPLATES[b.dataset.tpl];if(!confirm(`Switch to ${t.name}? This replaces your current program days. Logged workouts are kept.`))return;S.days=t.days();S.plan={tpl:b.dataset.tpl,days:[...t.sched]};S.goals.lifts=t.sched.filter(Boolean).length;progDay=0;save();toast(t.name+' is now your program');program();window.scrollTo(0,0)})}
+function plannedDay(day){return WorkoutPlan.preview(day,S.plan.length,S.settings)}
+function workoutEstimate(day){const n=WorkoutPlan.stats(day,S.settings);return `${n.exercises} exercises · ${n.sets} sets · ~${n.minutes} min`}
+function exercisePrescription(e){const p=WorkoutPlan.prescription(e),rest=WorkoutPlan.restSeconds(e,S.settings);return `${p.rirMin!==undefined?`${p.rirMin}–${p.rirMax} RIR · `:''}${rest}s rest`}
+function weeklySetsHTML(counts){const minimal=String(S.plan.tpl||'').startsWith('minimalist');return `<div class="card weekly-sets"><b>Hard sets this week</b> ${minimal?'':'<span class="mu sm">target 10–20</span>'}${Object.entries(counts).map(([muscle,n])=>minimal?`<div class="kv sm"><span>${esc(muscle)}</span><span>${n} sets</span></div>`:`<div class="row" style="margin-top:8px"><span style="width:96px" class="sm">${esc(muscle)}</span><div class="bar ${n<10?'lo':n>20?'hi':''}"><i style="width:${Math.min(100,n/20*100)}%"></i></div><span style="width:28px;text-align:right">${n}</span></div>`).join('')}<div class="mu sm" style="margin-top:8px">Counts logged sets with RIR ≤ 4 (or blank), assigned to each exercise’s primary muscle. Secondary muscle work is not counted.${minimal?' This minimalist routine starts with fewer sets; follow the planned sessions and assess progress before adding volume.':''}</div></div>`}
+function minimalistGuide(){if(!String(S.plan.tpl||'').startsWith('minimalist'))return '';return `<div class="card minimalist-guide"><div class="k">Minimalist hypertrophy · 45-minute budget</div><h3 style="margin-top:8px">Four movements. 2–3 working sets each.</h3><p class="mu sm">Finish with 1–2 good reps left (RIR). Start near 2 RIR and log what you actually had left; warm-up sets do not count.</p><details><summary>How to train this plan</summary><p class="mu sm">Rest 2 minutes on compounds and 90 seconds on accessories. Warm up for about 5 minutes, then add lighter practice sets before your first heavy lifts. Equipment waits and extra warmups can extend the estimate; finishing early is fine.</p><p class="mu sm">The starting routine emphasizes shoulders, lats and upper chest, with quads and hamstrings twice weekly at the suggested frequency. Adjust volume after a few consistent weeks based on progress and recovery.</p><p class="mu sm">Build reps within the range before adding a small amount of weight. Automatic increases require at least 2 recorded RIR, matching equipment, completed sets and current recovery data. Good wearable readings do not require you to lift heavier.</p><p class="mu sm">Short on time? Keep the planned movements and skip added extras. Walking and optional easy cardio can fit around lifting.</p></details></div>`}
+function lengthPicker(){return `<fieldset class="length-picker"><legend>Session length</legend><div class="length-options">${Object.entries(WorkoutPlan.lengths).map(([key,p])=>`<button type="button" data-length="${key}" aria-pressed="${S.plan.length===key}" class="${S.plan.length===key?'on':''}"><b>${p.label}</b><small>${p.name}</small></button>`).join('')}</div></fieldset>`}
+function bindLengthPicker(redraw){document.querySelectorAll('[data-length]').forEach(b=>b.onclick=()=>{S.plan.length=b.dataset.length;save();redraw()})}
+function planPreview(){return S.days.length?S.days.map(d=>{const p=plannedDay(d),before=WorkoutPlan.stats(d,S.settings),after=WorkoutPlan.stats(p,S.settings);return `<details class="plan-day"><summary><b>${esc(d.name)}</b><span class="mu sm">${workoutEstimate(p)}</span></summary><div class="mu sm plan-saving">${before.sets>after.sets?`${before.sets-after.sets} fewer sets than your full routine. `:''}${after.minutes>Number(S.plan.length)?'The planned rests put this above the time guide. ':''}Estimate includes a 5-minute warmup; equipment waits and extra warmups can add time.</div>${p.exercises.map(e=>`<div class="kv sm"><span>${esc(e.name)}</span><span>${e.sets} × ${e.min}–${e.max}</span></div><div class="mu sm plan-prescription">${exercisePrescription(e)}${e.cue?` · ${esc(e.cue)}`:''}</div>`).join('')||'<p class="mu sm">Add exercises below to build this day.</p>'}</details>`}).join(''):'<p class="mu sm">Add a day below to start building your routine.</p>'}
+function updatePlanPreview(){const p=$('#planPreview');if(p)p.innerHTML=planPreview()}
+function planHTML(){return `<div class="card training-settings"><div class="k">Your workout style</div><h3 style="margin-top:6px">${esc(TEMPLATES[S.plan.tpl]?.name||'Custom program')}</h3><div class="mu sm" style="margin-top:6px">Switch back anytime. Each style keeps its edited routine, schedule, and session length.</div>
+ <div class="style-options">${Object.entries(TEMPLATES).map(([k,t])=>`<button data-tpl="${k}" aria-pressed="${S.plan.tpl===k}" class="style-option ${S.plan.tpl===k?'on':''}"><b>${t.name}</b><small>${t.sub}</small><span class="sm">${S.plan.tpl===k?'Current style':Object.hasOwn(S.programs,k)?'Restore saved style':'Try this style'}</span></button>`).join('')}</div>
+ ${lengthPicker()}<div class="mu sm">30 min: up to 4 exercises, 3 sets each. 45 min: up to 5 × 3. 60 min: up to 6 × 4. Short sessions favor different muscle groups and trim sets to fit the time guide. Full uses your entire routine.</div>
+ ${S.active?'<div class="plan-notice">A workout is in progress. These settings apply to your next workout; your current sets are kept. <button data-go="workout">Resume workout</button></div>':''}</div>
+ ${minimalistGuide()}<div class="card"><div class="k">Session preview</div><div id="planPreview">${planPreview()}</div></div>
+ <div class="card"><div class="k">Training days</div><div class="wk" style="margin-top:10px">${WD.map((l,i)=>`<button class="wdb ${S.plan.days[i]?'on':''}" aria-label="${['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][i]}" aria-pressed="${!!S.plan.days[i]}" data-pd="${i}">${l}</button>`).join('')}</div><div class="mu sm" style="margin-top:8px">${S.plan.days.filter(Boolean).length} lifting days a week. Workouts rotate in order, so a missed day just moves to the next one. Your history and exercise progression carry across styles.</div></div>`}
+function bindPlan(){bindLengthPicker(program);
+ document.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{const i=+b.dataset.pd;S.plan.days[i]=S.plan.days[i]?0:1;if(!S.plan.days.some(Boolean))S.plan.days[i]=1;S.goals.lifts=S.plan.days.filter(Boolean).length;save();const y=window.scrollY;program();window.scrollTo(0,y)});
+ document.querySelectorAll('[data-tpl]').forEach(b=>b.onclick=()=>{const key=b.dataset.tpl;if(!WorkoutPlan.switchTo(S,key,TEMPLATES[key]))return;progDay=0;save();toast(TEMPLATES[key].name+' is now your program');program();window.scrollTo(0,0)})}
 
 // ===== coach: reads everything and says what matters today =====
 function latestRec(){const t=ymd();for(let i=0;i<3;i++){const r=recovery(addDays(t,-i));if(r)return{r,i}}return null}
 function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const add=(tag,col,title,body,go_)=>out.push({tag,col,title,body,go:go_});
- const lr=latestRec(),rd=readiness(),nd=nextDay(),lo=ymdToT(t);const todayS=S.sessions.filter(s=>s.date>=lo&&s.date<lo+dayMs);const recTxt=lr?`Recovery ${lr.r.score}%${lr.i?(lr.i===1?' yesterday':' two days ago'):''}`:'';
+ const lr=latestRec(),rd=readiness(),nd=plannedDay(nextDay()),lo=ymdToT(t);const todayS=S.sessions.filter(s=>s.date>=lo&&s.date<lo+dayMs);const recTxt=lr?`Recovery ${lr.r.score}%${lr.i?(lr.i===1?' yesterday':' two days ago'):''}`:'';
  const n=weekCount(weekStart());const wsI=(new Date().getDay()+6)%7;const left=S.plan.days.slice(wsI+1).filter(Boolean).length;const behind=n+left<g.lifts;
  const yA=actsOn(addDays(t,-1)).filter(a=>a.eff>=2&&a.min>=40)[0];const yNote=yA?` ${yA.type} yesterday (${yA.min} min, ${EFF[yA.eff][0].toLowerCase()}) is still in your legs.`:'';
  // train
@@ -99,9 +117,8 @@ function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const a
  else if(todayS.length){const s=todayS[todayS.length-1];const sm=summary(s);add('Train','var(--ac)',`${s.dayName} done`,`${sm.sets} set${sm.sets===1?'':'s'}${sm.vol?', '+fmtN(sm.vol)+' lb moved':''}. Get 30–40 g of protein in over the next couple of hours and you’ve done the job for today.`,'history')}
  else if(nd&&(isTrainDay()||behind)){const ups=nd.exercises.filter(e=>target(e).up).length;const e0=nd.exercises[0],t0=e0&&target(e0);const first=t0&&t0.last?` First up: ${e0.name}, ${t0.sets[0].w} lb × ${t0.sets[0].r}.`:'';
   const why=!isTrainDay()&&behind?' Not a scheduled day, but you need it to hit '+g.lifts+' this week.':'';
-  if(rd.lvl==='hard')add('Train','var(--good)',`Push ${nd.name} today`,`${recTxt||'You’re rested'}: go for the top of every rep range. Strain target ${strainTarget('g').join('–')}.${ups?` ${ups} lift${ups>1?'s are':' is'} due a weight jump.`:''}${first}${why}`,'home');
-  else if(rd.lvl==='normal')add('Train','var(--warn)',`${nd.name}: train as planned`,`${recTxt||'Middling readiness'}. Hit your targets, leave one rep in the tank on the big lifts.${first}${yNote}${why}`,'home');
-  else add('Train','var(--bad)',`${nd.name}, but hold back`,`${recTxt||'You’re run down'} (${rd.why.slice(1).join(', ')||'low readiness'}). Keep the weights, stop two reps short and drop the last set of the small lifts.${yNote}`,'home')}
+  const hr=trainingReadiness();add('Train',hr.level==='easy'?'var(--warn)':'var(--ac)',`${nd.name}: ${hr.label.toLowerCase()}`,`${hr.reasons.join(' ')}${ups?` ${ups} exercise${ups>1?'s have':' has'} earned a small load increase from matching past sets.`:' Match the last load and use the exercise-specific suggestion.'}${first}${yNote}`,'home')}
+
  else add('Train','var(--mu)','Rest day',`Next lift: ${nd?nd.name:'—'} ${nextTrainLabel()}. A walk toward ${fmtN(g.steps)} steps helps you recover without costing anything.${yNote}`,'home');
  // sleep
  const debt=sleepDebt(),con=consistency(),ns=sleepNights(7).filter(x=>x.hours!==null),last=lastSleep();
@@ -110,7 +127,7 @@ function coach(){const t=ymd(),g=S.goals,out=[],hr=new Date().getHours();const a
  else if(ns.length>=4)add('Sleep','var(--sleep)',`Sleep is on point`,`${hm(avg(ns.map(x=>x.hours)))} a night over the last ${ns.length} tracked nights. Keep ${fmtBed(g.bed)} as the anchor.`,'sleep');
  // HRV trend
  const h7=H.days.filter(x=>x.date>addDays(t,-8)&&num(x.hrv)!==null).map(x=>x.hrv),hb=baseAt('hrv',t);
- if(h7.length>=4&&hb){const p=(avg(h7)-hb.mu)/hb.mu*100;if(p<=-8)add('Recovery','var(--bad)',`HRV is trending ${Math.abs(Math.round(p))}% under baseline`,'A week-long dip usually means sleep, stress or volume is piling up. Protect sleep and don’t add sets this week.','vitals');else if(p>=8)add('Recovery','var(--good)',`HRV is running ${Math.round(p)}% above baseline`,'Your body is absorbing the work. A good week to push the main lifts.','vitals')}
+ if(h7.length>=4&&hb){const p=(avg(h7)-hb.mu)/hb.mu*100;if(p<=-8)add('Recovery','var(--bad)',`HRV is trending ${Math.abs(Math.round(p))}% under baseline`,'A week-long dip usually means sleep, stress or volume is piling up. Protect sleep and don’t add sets this week.','vitals');else if(p>=8)add('Recovery','var(--good)',`HRV is running ${Math.round(p)}% above baseline`,'This is one recovery signal. Increase a load only when matching workout history supports it and you feel ready.','vitals')}
  // fuel
  const ft=foodTot(t),anyFood=[0,1,2,3].some(i=>foodDay(addDays(t,-i)).length),remP=Math.round(g.protein-ft.p),remK=Math.round(g.kcal-ft.k);
  if(!anyFood)add('Fuel','#ff9f0a','Start logging what you eat','Tap Log food and just say it: “chicken burrito bowl, large, with guac”. Lift estimates calories and protein so your targets mean something.','food');
@@ -266,6 +283,8 @@ function screenSheet(done){const fin=()=>{closeSheet();(done||render)()};let fou
 
 // ---- boot (kept last so every script has loaded) ----
 Object.assign(window.LIFT,{screenHTML,aiJSON,buildICS,explain,coach,actsOn,exAll,aiFood});
-render();loadHealth();Store.init({get:()=>S,adopt,onStatus});
-setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},5*60e3);
+document.querySelectorAll('nav button').forEach(b=>b.disabled=true);$('#view').innerHTML='<div class="card mu">Restoring your saved workouts…</div>';
+Store.init({get:()=>S,cloudGet:sanitizedCloudState,adopt,onStatus}).then(()=>{storageReady=true;document.querySelectorAll('nav button').forEach(b=>b.disabled=false);render();loadHealth()});
+setInterval(()=>{if(document.visibilityState==='visible')loadHealth()},60e3);
 if('serviceWorker'in navigator){navigator.serviceWorker.register('sw.js').then(r=>setInterval(()=>r.update().catch(()=>{}),30*60e3)).catch(()=>{})}
+
