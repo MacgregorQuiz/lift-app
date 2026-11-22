@@ -14,12 +14,27 @@ const WorkoutPlan = (() => {
     state.plan.length = mode(state.plan.length);
     return state;
   }
+  function restSeconds(exercise, settings = {}) {
+    const value = exercise.restSeconds;
+    const explicit = value !== '' && value !== null && value !== undefined && Number.isFinite(Number(value));
+    return Math.max(0, Math.min(600, Number(explicit ? value : (exercise.compound ? settings.restCompound : settings.restIso)) || 0));
+  }
+  function prescription(exercise) {
+    const result = {};
+    if (exercise.restSeconds !== '' && exercise.restSeconds !== null && exercise.restSeconds !== undefined && Number.isFinite(Number(exercise.restSeconds))) result.restSeconds = restSeconds(exercise);
+    if (Number.isFinite(exercise.rirMin) && Number.isFinite(exercise.rirMax) && exercise.rirMin >= 0 && exercise.rirMax >= exercise.rirMin && exercise.rirMax <= 5) {
+      result.rirMin = exercise.rirMin;
+      result.rirMax = exercise.rirMax;
+    }
+    if (typeof exercise.cue === 'string') result.cue = exercise.cue;
+    return result;
+  }
   function stats(day, settings) {
     const exercises = day.exercises.length;
     let sets = 0, seconds = exercises ? 300 : 0; // five-minute warmup allowance
     for (const e of day.exercises) {
       const n = Math.max(1, Math.floor(Number(e.sets) || 1));
-      const rest = Math.max(0, Number(e.compound ? settings.restCompound : settings.restIso) || 0);
+      const rest = restSeconds(e, settings);
       sets += n;
       seconds += n * 40 + Math.max(0, n - 1) * rest + 60;
     }
@@ -57,6 +72,6 @@ const WorkoutPlan = (() => {
     state.goals.lifts = state.plan.days.filter(Boolean).length;
     return true;
   }
-  return {lengths, mode, migrate, stats, preview, switchTo};
+  return {lengths, mode, migrate, restSeconds, prescription, stats, preview, switchTo};
 })();
 if (typeof module !== 'undefined') module.exports = WorkoutPlan;

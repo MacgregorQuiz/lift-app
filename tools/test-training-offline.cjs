@@ -8,6 +8,7 @@ const assert=require('node:assert/strict');
  await page.goto(process.env.LIFT_URL||'http://127.0.0.1:8000');
  await page.waitForFunction(()=>!!navigator.serviceWorker.controller);
  await page.click('nav [data-v="more"]');await page.click('[data-go="program"]');
+ await page.click('[data-tpl="minimalist4"]');
  await page.click('[data-length="45"]');
  await page.locator('.plan-day summary').first().click();
  await page.evaluate(()=>window.scrollTo(0,0));
@@ -18,7 +19,8 @@ const assert=require('node:assert/strict');
  assert.equal(await page.evaluate(()=>HealthFeed.status().lastChecked),0);
  assert.match(await page.locator('.health-sync-status').first().innerText(),/Using saved Health/);
  await page.click('nav [data-v="home"]');await page.click('#start');
- assert.ok(await page.evaluate(()=>LIFT.S.active.entries.length<=5));
+ assert.equal(await page.evaluate(()=>LIFT.S.active.entries.length),4);
+ assert.ok(await page.evaluate(()=>LIFT.S.active.entries.every(e=>e.rirMin===1&&e.rirMax===2&&[90,120].includes(e.restSeconds))));
  assert.deepEqual(errors,[]);
  console.log('PASS: service worker caches all training and Health scripts, settings persist, Health fallback is labeled cached (not freshly checked), and workouts start offline.');
  }finally{await browser.close()}

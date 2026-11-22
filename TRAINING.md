@@ -2,13 +2,32 @@
 
 Open **Train → Program**, or **More → Training settings**.
 
-- Switch among Upper / Lower, Push / Pull / Legs, and Full Body. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
+- Switch among the two Minimalist plans, Upper / Lower, Push / Pull / Legs, and Full Body. Each style retains its customized days, exercise IDs, weekly schedule, and session length when you switch away and back.
 - Choose a 30-, 45-, or 60-minute guide, or Full. The shorter options cap exercises and sets, favor distinct muscle groups, and trim later sets to approach the guide. They never rewrite the full routine.
-- Expand a day under Session preview to see exercises, working sets, rep ranges, and estimated duration. Estimates include a five-minute warmup, 40 seconds per set, configured rests between sets, and one minute per exercise for transitions. Equipment waits and additional warmups may add time.
+- Expand a day under Session preview to see exercises, working sets, rep ranges, prescribed effort, rests, and estimated duration. Estimates include a five-minute warmup, 40 seconds per set, configured rests between sets, and one minute per exercise for transitions. Equipment waits, unilateral exercises, and additional warmups may add time.
 - Edit the full routine below the preview. Changes appear in the preview immediately.
 - Changes affect the next workout. A session already in progress and completed history are preserved.
 
 Existing saves default to Full so upgrading does not silently change their routines. A newly selected style defaults to 45 minutes. Returning to a style restores its saved choice. Use the session-length buttons on Train for a quick adjustment; the choice persists for that style.
+
+## Minimalist hypertrophy
+
+Choose **Minimalist Upper / Lower** for four days (Monday, Tuesday, Thursday, Saturday), or **Minimalist PPL + Upper / Lower** for five days (Monday, Tuesday, Wednesday, Friday, Saturday). PPL means Push / Pull / Legs. Both are starting routines with four exercises per session and two lower-body sessions weekly. The 45-minute selection is a budget, not a required duration or a guarantee.
+
+The four-day starting routine is:
+
+| Day | Working sets × reps |
+| --- | --- |
+| Upper A | Incline DB press 3×6–12; neutral-grip pulldown 3×6–12; chest-supported machine row 2×6–12; cable lateral raise 3×10–20 |
+| Lower A | Leg press 3×6–12; DB Romanian deadlift 2×6–12; machine calf raise 2×10–20; machine preacher curl 2×10–20 |
+| Upper B | Neutral-grip pulldown 3×6–12; incline machine press 3×6–12; reverse pec deck 2×10–20; cable lateral raise 3×10–20 |
+| Lower B | Hack squat 3×6–12; seated leg curl 3×10–20; cable crunch 2×10–20; rope pushdown 2×10–20 |
+
+Aim for 1–2 reps in reserve (RIR), starting near 2. Actual RIR fields stay blank until logged; the target is not a measurement. Rest defaults within these routines are 120 seconds for compounds and 90 seconds for accessories. Exercise-specific rests drive both estimates and timers. Change **Rest seconds** in the routine editor, or clear it to use the global default. Workout entries retain their prescribed effort, rest and coaching cue, separate from dated user notes.
+
+Build reps at the same load before adding weight. Automatic load increases retain the stricter requirement of at least two recorded RIR and matching equipment/history/recovery conditions. A set logged at 1 RIR correctly holds back an automatic increase. Machine weight meanings and setup identifiers must be confirmed; plate-loaded and stack machines are not assumed interchangeable.
+
+This shorter version deliberately uses less volume than the pasted five-to-seven-exercise routine. It emphasizes upper chest, lats and shoulders while retaining quad work, a hip hinge and knee flexion across two lower days. It does not claim every muscle receives ten direct sets weekly, guarantee recovery in 48 hours, or prescribe loaded neck exercises. Existing calorie, protein and activity goals are not changed by selecting a training plan.
 
 ## Workout data
 
@@ -40,6 +59,7 @@ Run the planner, coaching, and storage regression tests with Node:
 
 ```sh
 node tools/test-workout-plan.cjs
+node tools/test-minimalist-plan.cjs
 node tools/test-training-coach.cjs
 node tools/test-store.cjs
 node tools/test-health-privacy.cjs
@@ -51,6 +71,7 @@ For browser checks, install Playwright in your development environment, serve th
 python -m http.server 8000 --bind 127.0.0.1
 # In a second terminal:
 node tools/test-training-ui.cjs
+node tools/test-minimalist-ui.cjs
 node tools/test-training-offline.cjs
 node tools/test-coaching-ui.cjs
 ```

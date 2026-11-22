@@ -36,3 +36,14 @@ test('empty, one-set and long-rest routines stay usable and estimates remain hon
  assert.ok(P.stats(long,{restCompound:600,restIso:600}).minutes>30);
  assert.deepEqual(P.preview(routine,'invalid',settings),routine);
 });
+test('exercise rests drive estimates and prescription copying without filling actual effort',()=>{
+ const day={exercises:[{name:'Press',sets:3,compound:true,restSeconds:120,rirMin:1,rirMax:2,cue:'Leave two good reps.'}]};
+ assert.equal(P.stats(day,{restCompound:600}).minutes,12);
+ assert.equal(P.restSeconds(day.exercises[0],{restCompound:600}),120);
+ assert.equal(P.restSeconds({compound:true,restSeconds:''},settings),120);
+ assert.equal(P.restSeconds({compound:false,restSeconds:0},settings),0);
+ assert.equal(P.restSeconds({compound:true,restSeconds:'invalid'},settings),120);
+ assert.deepEqual(P.prescription(day.exercises[0]),{restSeconds:120,rirMin:1,rirMax:2,cue:'Leave two good reps.'});
+ assert.deepEqual(P.prescription({name:'Legacy',sets:3}),{});
+ assert.deepEqual(P.preview(day,'45',settings),day);
+});
