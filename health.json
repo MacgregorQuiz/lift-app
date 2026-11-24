@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-23T21:00:59-05:00",
+  "updated": "2026-11-24T07:30:00-05:00",
   "days": [
     {
       "date": "2026-09-26",
@@ -939,21 +939,41 @@
       "wakeTime": "2026-11-22T07:02:00-05:00",
       "sleepDeepMin": 89,
       "sleepRemMin": 103,
-      "sleepLightMin": 301
+      "sleepLightMin": 301,
+      "spo2": 99,
+      "respiratoryRate": 15
     },
     {
       "date": "2026-11-23",
       "hrv": 74.72,
       "restingHR": 46,
-      "sleepHours": 8.56,
-      "sleepScore": 93,
-      "bedtime": "2026-11-22T21:23:00-05:00",
-      "wakeTime": "2026-11-23T06:32:00-05:00",
-      "sleepDeepMin": 58,
-      "sleepRemMin": 158,
-      "sleepLightMin": 298,
-      "steps": 3495,
-      "activeKcal": 97
+      "sleepHours": 6.18,
+      "sleepScore": 60,
+      "bedtime": "2026-11-23T00:09:00-05:00",
+      "wakeTime": "2026-11-23T06:29:00-05:00",
+      "sleepDeepMin": 21,
+      "sleepRemMin": 111,
+      "sleepLightMin": 239,
+      "steps": 3745,
+      "activeKcal": 101,
+      "spo2": 99,
+      "respiratoryRate": 14
+    },
+    {
+      "date": "2026-11-24",
+      "steps": 1617,
+      "activeKcal": 139,
+      "hrv": 65.19,
+      "restingHR": 47,
+      "sleepHours": 7.94,
+      "sleepScore": 98,
+      "bedtime": "2026-11-23T21:01:00-05:00",
+      "wakeTime": "2026-11-24T06:06:00-05:00",
+      "sleepDeepMin": 74,
+      "sleepRemMin": 110,
+      "sleepLightMin": 293,
+      "spo2": 99,
+      "respiratoryRate": 14
     }
   ]
 }
