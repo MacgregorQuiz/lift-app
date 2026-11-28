@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-27T20:59:48-05:00",
+  "updated": "2026-11-28T07:35:00-05:00",
   "days": [
     {
       "date": "2026-09-26",
@@ -977,17 +977,25 @@
     },
     {
       "date": "2026-11-25",
-      "steps": 847,
-      "activeKcal": 26,
+      "steps": 2699,
+      "activeKcal": 90,
       "hrv": 96.28,
       "restingHR": 53,
       "spo2": 99,
       "respiratoryRate": 15
     },
     {
+      "date": "2026-11-26",
+      "steps": 3981,
+      "activeKcal": 150,
+      "restingHR": 54
+    },
+    {
       "date": "2026-11-27",
-      "steps": 3951,
-      "activeKcal": 111
+      "steps": 5368,
+      "activeKcal": 150,
+      "hrv": 82.94,
+      "restingHR": 58
     }
   ]
 }
